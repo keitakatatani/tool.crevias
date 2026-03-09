@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>請求書 PDF リネームツール</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a25;
+    --border: #2a2a3a;
+    --border2: #1e1e2e;
+    --accent: #4f6ef7;
+    --accent2: #7c3aed;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --text: #e8e8f0;
+    --text-muted: #6b6b85;
+    --text-dim: #3a3a52;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(var(--text-dim) 1px, transparent 1px), linear-gradient(90deg, var(--text-dim) 1px, transparent 1px);
+    background-size: 40px 40px; opacity: 0.12; pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px 18px 40px; position: relative; z-index: 1; }
+
+  header { margin-bottom: 14px; }
+  .logo { font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+  .logo-dot { width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+  h1 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 6px; }
+  h1 span { background: linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .rule-badge { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; font-size:11px; font-family:'Space Mono',monospace; color:var(--text-muted); }
+  .rule-badge b { color:var(--accent); font-weight:400; }
+
+  /* API Key */
+  .key-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin-bottom:10px; display:flex; align-items:center; gap:10px; }
+  .key-label { font-size:11px; font-family:'Space Mono',monospace; color:var(--text-muted); white-space:nowrap; }
+  .key-input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:7px 11px; font-size:12px; font-family:'Space Mono',monospace; color:var(--text); outline:none; transition:border-color .2s; }
+  .key-input:focus { border-color:var(--accent); }
+  .key-input::placeholder { color:var(--text-dim); }
+  .key-badge { font-size:10px; font-family:'Space Mono',monospace; padding:4px 9px; border-radius:5px; white-space:nowrap; flex-shrink:0; }
+  .key-badge.ok { background:rgba(16,185,129,.15); color:var(--success); }
+  .key-badge.ng { background:rgba(107,107,133,.15); color:var(--text-muted); }
+
+  /* Drop zone */
+  .drop-zone { border:2px dashed var(--border); border-radius:10px; padding:36px 24px; text-align:center; cursor:pointer; transition:all .3s; background:var(--surface); position:relative; overflow:hidden; margin-bottom:12px; display:flex; align-items:center; justify-content:center; gap:12px; }
+  .drop-zone::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 0%, rgba(79,110,247,.08) 0%, transparent 70%); opacity:0; transition:opacity .3s; }
+  .drop-zone.dragging { border-color:var(--accent); background:rgba(79,110,247,.05); }
+  .drop-zone.dragging::before { opacity:1; }
+  .drop-icon { width:32px;height:32px;flex-shrink:0;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:15px; }
+  .drop-title { font-size:13px; font-weight:500; }  .drop-text { text-align:left; }
+  .drop-sub { font-size:11px; color:var(--text-muted); }
+  .drop-sub b { color:var(--accent); font-weight:500; }
+  #fileInput { display:none; }
+
+  /* Action bar */
+  .action-bar { display:flex; gap:9px; align-items:center; margin-bottom:12px; }
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 20px; border-radius:8px; font-size:13px; font-weight:500; font-family:'Noto Sans JP',sans-serif; cursor:pointer; transition:all .2s; border:none; }
+  .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; flex:1; }
+  .btn-primary:hover:not(:disabled) { opacity:.88; transform:translateY(-1px); }
+  .btn-primary:disabled { opacity:.35; cursor:not-allowed; }
+  .btn-secondary { background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); }
+  .btn-secondary:hover { color:var(--text); border-color:var(--text-muted); }
+  .count-chip { font-family:'Space Mono',monospace; font-size:10px; padding:2px 7px; background:rgba(79,110,247,.2); border-radius:20px; color:var(--accent); }
+
+  /* ── スプレッドシートテーブル ── */
+  .sheet-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:12px; }
+  .sheet-table { width:100%; border-collapse:collapse; table-layout:fixed; }
+
+  .sheet-table thead tr { background:var(--surface2); }
+  .sheet-table thead th {
+    padding: 6px 8px;
+    font-size: 9px; font-family:'Space Mono',monospace; font-weight:700; letter-spacing:.08em;
+    color: var(--text-muted); text-align:left;
+    border-bottom: 2px solid var(--border);
+    border-right: 1px solid var(--border);
+    white-space: nowrap; user-select:none;
+  }
+  .sheet-table thead th:last-child { border-right:none; }
+
+  .sheet-table tbody tr { border-bottom:1px solid var(--border2); transition:background .1s; }
+  .sheet-table tbody tr:last-child { border-bottom:none; }
+  .sheet-table tbody tr:hover { background:rgba(79,110,247,.04); }
+  .sheet-table tbody tr.row-reading { background:rgba(245,158,11,.04); }
+  .sheet-table tbody tr.row-error   { background:rgba(239,68,68,.04); }
+
+  .sheet-table tbody td { padding:2px 3px; border-right:1px solid var(--border2); vertical-align:middle; }
+  .sheet-table tbody td:last-child { border-right:none; }
+
+  /* 列幅 */
+  .col-num    { width:28px; }
+  .col-orig   { width:150px; }
+  .col-status { width:64px; }
+  .col-date   { width:84px; }
+  .col-item   { width:96px; }
+  .col-prop   { width:110px; }
+  .col-loc    { width:72px; }
+  .col-type   { width:68px; }
+  .col-newname{ } /* flex */
+  .col-dl     { width:44px; }
+  .col-rm     { width:26px; }
+
+  /* 行番号 */
+  td.col-num { text-align:center; font-size:10px; font-family:'Space Mono',monospace; color:var(--text-dim); background:var(--surface2); border-right:2px solid var(--border) !important; user-select:none; }
+
+  /* 元ファイル名 */
+  .orig-name { font-size:10px; font-family:'Space Mono',monospace; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; padding:0 4px; }
+
+  /* ステータスチップ */
+  td.col-status { text-align:center; }
+  .status-chip { display:inline-block; font-family:'Space Mono',monospace; font-size:8px; font-weight:700; letter-spacing:.1em; padding:2px 5px; border-radius:3px; }
+  .s-pending { background:rgba(107,107,133,.2); color:var(--text-muted); }
+  .s-reading { background:rgba(245,158,11,.15); color:var(--warning); }
+  .s-done    { background:rgba(16,185,129,.15);  color:var(--success); }
+  .s-error   { background:rgba(239,68,68,.15);   color:var(--error); }
+
+  /* セル入力 */
+  .cell-input {
+    width:100%; height:26px; background:transparent; border:1px solid transparent;
+    border-radius:3px; padding:2px 5px; font-size:11px;
+    font-family:'Noto Sans JP',sans-serif; color:var(--text); outline:none;
+    transition:border-color .15s, background .15s;
+  }
+  .cell-input:hover  { border-color:var(--border); background:var(--surface2); }
+  .cell-input:focus  { border-color:var(--accent); background:var(--surface2); box-shadow:0 0 0 2px rgba(79,110,247,.15); }
+  .cell-input:disabled { color:var(--text-dim); cursor:default; }
+  .cell-input::placeholder { color:var(--text-dim); font-size:10px; }
+
+  /* 種別タブ */
+  .type-tabs { display:flex; height:24px; background:var(--surface2); border:1px solid var(--border); border-radius:3px; overflow:hidden; }
+  .type-tab { flex:1; border:none; background:transparent; color:var(--text-muted); font-size:10px; font-family:'Noto Sans JP',sans-serif; font-weight:600; cursor:pointer; transition:all .15s; }
+  .type-tab.active-manage { background:rgba(79,110,247,.3); color:#818cf8; }
+  .type-tab.active-own    { background:rgba(16,185,129,.3); color:var(--success); }
+
+  /* 新ファイル名 */
+  .new-name-text { font-size:10px; font-family:'Space Mono',monospace; color:var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; padding:0 5px; }
+
+  /* DLボタン */
+  td.col-dl { text-align:center; }
+  .btn-dl-row { background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.3); border-radius:4px; color:var(--success); font-size:10px; padding:2px 6px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-weight:500; transition:all .15s; white-space:nowrap; }
+  .btn-dl-row:hover { background:rgba(16,185,129,.25); }
+
+  /* 削除ボタン */
+  td.col-rm { text-align:center; }
+  .btn-rm { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; line-height:1; padding:1px 3px; border-radius:3px; transition:color .15s; }
+  .btn-rm:hover { color:var(--error); }
+
+  /* 解析中・エラー */
+  .reading-cell { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--text-muted); padding:0 5px; }
+  .dots { display:inline-flex; gap:2px; }
+  .dots span { width:3px;height:3px;background:var(--warning);border-radius:50%;animation:dot 1.3s ease-in-out infinite; }
+  .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+  @keyframes dot{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+  .error-cell { font-size:10px; color:var(--error); padding:0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* 空状態 */
+  .sheet-empty { text-align:center; padding:18px; font-size:12px; color:var(--text-dim); }
+
+  /* 一括DL */
+  .dl-section { background:var(--surface); border:1px solid rgba(16,185,129,.3); border-radius:10px; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; }
+  .dl-title { font-size:13px; font-weight:500; color:var(--success); }
+  .btn-dl-all { background:linear-gradient(135deg,var(--success),#059669); border:none; border-radius:7px; color:#fff; font-size:12px; padding:7px 16px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-weight:500; transition:all .2s; }
+  .btn-dl-all:hover { opacity:.85; transform:translateY(-1px); }
+  .btn-dl-all:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo"><div class="logo-dot"></div>Invoice PDF Rename Tool</div>
+    <h1>請求書 <span>PDFリネーム</span>ツール</h1>
+    <div class="rule-badge">命名規則：<b>作成日</b>_<b>明細内容</b>_<b>物件名</b>_<b>場所</b>_<b>種別</b>.pdf</div>
+  </header>
+
+  <div class="key-section">
+    <span class="key-label">API KEY</span>
+    <input class="key-input" id="apiKey" type="password" placeholder="sk-ant-api03-xxxx（初回のみ入力・自動保存）" autocomplete="off">
+    <span class="key-badge" id="keyBadge"></span>
+  </div>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-icon">📄</div>
+    <div class="drop-text">
+      <div class="drop-title">PDFファイルをここにドロップ</div>
+      <div class="drop-sub">または <b>クリックして選択</b>（複数同時OK・スキャンPDF対応）</div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf" multiple>
+  </div>
+
+  <div class="action-bar" id="actionBar" style="display:none">
+    <button class="btn btn-secondary" id="btnClear">クリア</button>
+    <button class="btn btn-primary" id="btnAnalyze" disabled>
+      🔍 AIで解析する <span class="count-chip" id="countChip">0</span>
+    </button>
+  </div>
+
+  <div class="sheet-wrap" id="sheetWrap" style="display:none">
+    <table class="sheet-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-orig">元ファイル名</th>
+          <th class="col-status">状態</th>
+          <th class="col-date">日付</th>
+          <th class="col-item">明細内容</th>
+          <th class="col-prop">物件名</th>
+          <th class="col-loc">場所</th>
+          <th class="col-type">種別</th>
+          <th class="col-newname">新ファイル名</th>
+          <th class="col-dl">DL</th>
+          <th class="col-rm"></th>
+        </tr>
+      </thead>
+      <tbody id="sheetBody">
+        <tr><td colspan="11" class="sheet-empty">PDFをドロップして追加してください</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="dlSection" style="display:none" class="dl-section">
+    <div class="dl-title">✅ 解析完了</div>
+    <button class="btn-dl-all" id="btnDlAll">⬇ 全件一括ダウンロード</button>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const files = new Map();
+let nextId = 0;
+
+// ── API Key ────────────────────────────────────────────────
+const apiKeyEl = document.getElementById('apiKey');
+const keyBadge = document.getElementById('keyBadge');
+const savedKey = localStorage.getItem('anthropic_api_key') || '';
+if (savedKey) apiKeyEl.value = savedKey;
+updateKeyBadge(savedKey);
+
+function getKey() { return apiKeyEl.value.trim(); }
+function updateKeyBadge(key) {
+  const ok = key.startsWith('sk-ant');
+  keyBadge.textContent = ok ? '✓ 保存済み' : '未入力';
+  keyBadge.className = 'key-badge ' + (ok ? 'ok' : 'ng');
+}
+apiKeyEl.addEventListener('input', () => {
+  const key = getKey();
+  if (key.startsWith('sk-ant')) localStorage.setItem('anthropic_api_key', key);
+  updateKeyBadge(key);
+  refreshBtn();
+});
+
+// ── Drag & Drop ────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragging'); });
+dropZone.addEventListener('dragleave', e => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('dragging'); });
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragging'); addFiles([...e.dataTransfer.files]); });
+fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
+
+function addFiles(list) {
+  const pdfs = list.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+  if (!pdfs.length) return alert('PDFファイルのみ対応しています');
+  pdfs.forEach(f => {
+    const id = ++nextId;
+    files.set(id, { file: f, status: 'pending', data: null });
+  });
+  refreshUI();
+  renderTable();
+}
+
+// ── テーブル描画 ───────────────────────────────────────────
+const FIELD_ORDER = ['fd','bi','pr','lo'];
+
+function renderTable() {
+  const tbody = document.getElementById('sheetBody');
+  if (!files.size) {
+    tbody.innerHTML = '<tr><td colspan="11" class="sheet-empty">PDFをドロップして追加してください</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  let num = 1;
+  for (const [id, entry] of files) {
+    const tr = document.createElement('tr');
+    tr.id = `row${id}`;
+    tr.className = `row-${entry.status}`;
+    tr.innerHTML = buildRow(id, entry, num++);
+    tbody.appendChild(tr);
+    attachRowEvents(id);
+  }
+}
+
+function buildRow(id, entry, num) {
+  const { file, status, data } = entry;
+  const chipMap = { pending:['s-pending','PENDING'], reading:['s-reading','READING'], done:['s-done','DONE'], error:['s-error','ERROR'] };
+  const [cls, lbl] = chipMap[status] || chipMap.pending;
+
+  const numCell    = `<td class="col-num">${num}</td>`;
+  const origCell   = `<td class="col-orig"><span class="orig-name" title="${esc(file.name)}">${esc(file.name)}</span></td>`;
+  const statusCell = `<td class="col-status"><span class="status-chip ${cls}">${lbl}</span></td>`;
+  const rmCell     = `<td class="col-rm"><button class="btn-rm" onclick="rm(${id})">×</button></td>`;
+
+  if (status === 'pending') {
+    return numCell + origCell + statusCell + `<td colspan="6"></td><td class="col-dl"></td>` + rmCell;
+  }
+  if (status === 'reading') {
+    return numCell + origCell + statusCell +
+      `<td colspan="6"><div class="reading-cell">解析中<div class="dots"><span></span><span></span><span></span></div></div></td><td class="col-dl"></td>` + rmCell;
+  }
+  if (status === 'error') {
+    return numCell + origCell + statusCell +
+      `<td colspan="6"><div class="error-cell">⚠️ ${esc(data?.error||'エラー')}</div></td><td class="col-dl"></td>` + rmCell;
+  }
+
+  // done
+  const d = data;
+  const tm = d.docType === '管理' ? 'active-manage' : '';
+  const to = d.docType === '保有' ? 'active-own'    : '';
+  const newName = mkName(d);
+
+  return numCell + origCell + statusCell +
+    `<td class="col-date"><input class="cell-input" id="fd${id}" value="${esc(d.fileDate)}" placeholder="YYYYMMDD"></td>` +
+    `<td class="col-item"><input class="cell-input" id="bi${id}" value="${esc(d.billingItem)}" placeholder="電気料金…"></td>` +
+    `<td class="col-prop"><input class="cell-input" id="pr${id}" value="${esc(d.property)}" placeholder="物件名"></td>` +
+    `<td class="col-loc"><input class="cell-input" id="lo${id}" value="${esc(d.location)}" placeholder="共用"></td>` +
+    `<td class="col-type"><div class="type-tabs" id="tt${id}">
+      <button class="type-tab ${tm}" id="tm${id}" onclick="setType(${id},'管理')">管理</button>
+      <button class="type-tab ${to}" id="to${id}" onclick="setType(${id},'保有')">保有</button>
+    </div></td>` +
+    `<td class="col-newname"><span class="new-name-text" id="nn${id}" title="${esc(newName)}">${esc(newName)}</span></td>` +
+    `<td class="col-dl"><button class="btn-dl-row" onclick="dlOne(${id})">⬇DL</button></td>` +
+    rmCell;
+}
+
+function attachRowEvents(id) {
+  const entry = files.get(id);
+  if (!entry || entry.status !== 'done') return;
+  const fieldMap = { fd:'fileDate', bi:'billingItem', pr:'property', lo:'location' };
+  FIELD_ORDER.forEach(fname => {
+    const el = document.getElementById(`${fname}${id}`);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (entry.data) entry.data[fieldMap[fname]] = el.value;
+      upd(id);
+    });
+    el.addEventListener('keydown', e => handleKey(e, id, fname));
+  });
+}
+
+// ── キー操作 ──────────────────────────────────────────────
+function handleKey(e, id, fname) {
+  const ids = [...files.keys()].filter(k => files.get(k).status === 'done');
+  const myIdx = ids.indexOf(id);
+  const cur = FIELD_ORDER.indexOf(fname);
+
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    if (cur === FIELD_ORDER.length - 1 && myIdx < ids.length - 1) {
+      document.getElementById(`${FIELD_ORDER[0]}${ids[myIdx+1]}`)?.focus();
+    } else {
+      document.getElementById(`${FIELD_ORDER[(cur+1) % FIELD_ORDER.length]}${id}`)?.focus();
+    }
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (myIdx < ids.length - 1) {
+      document.getElementById(`${fname}${ids[myIdx+1]}`)?.focus();
+    }
+  }
+}
+
+// ── 種別タブ ──────────────────────────────────────────────
+function setType(id, type) {
+  const entry = files.get(id);
+  if (!entry?.data) return;
+  entry.data.docType = type;
+  document.getElementById(`tm${id}`).className = 'type-tab' + (type === '管理' ? ' active-manage' : '');
+  document.getElementById(`to${id}`).className = 'type-tab' + (type === '保有' ? ' active-own' : '');
+  upd(id);
+}
+
+// ── ファイル名更新 ─────────────────────────────────────────
+function upd(id) {
+  const entry = files.get(id);
+  if (!entry?.data) return;
+  const name = mkName(entry.data);
+  const el = document.getElementById(`nn${id}`);
+  if (el) { el.textContent = name; el.title = name; }
+  renderDL();
+}
+
+function getFields(id) {
+  const entry = files.get(id);
+  return {
+    fileDate:    document.getElementById(`fd${id}`)?.value ?? entry?.data?.fileDate ?? '',
+    billingItem: document.getElementById(`bi${id}`)?.value ?? entry?.data?.billingItem ?? '',
+    property:    document.getElementById(`pr${id}`)?.value ?? entry?.data?.property ?? '',
+    location:    document.getElementById(`lo${id}`)?.value ?? entry?.data?.location ?? '',
+    docType:     entry?.data?.docType ?? '管理',
+  };
+}
+
+function mkName(d) {
+  const s = v => (String(v||'').trim().replace(/[\\/:*?"<>|\r\n]/g,'_') || '不明');
+  return `${s(d.fileDate)}_${s(d.billingItem)}_${s(d.property)}_${s(d.location)}_${s(d.docType)}.pdf`;
+}
+
+function rm(id) {
+  files.delete(id);
+  refreshUI();
+  renderTable();
+  renderDL();
+}
+
+// ── UI ─────────────────────────────────────────────────────
+function refreshUI() {
+  const has = files.size > 0;
+  document.getElementById('actionBar').style.display = has ? 'flex' : 'none';
+  document.getElementById('sheetWrap').style.display = has ? 'block' : 'none';
+  document.getElementById('countChip').textContent = files.size;
+  refreshBtn();
+}
+function refreshBtn() {
+  const hasPending = [...files.values()].some(e => e.status === 'pending');
+  document.getElementById('btnAnalyze').disabled = !(hasPending && getKey().startsWith('sk-ant'));
+}
+
+document.getElementById('btnClear').addEventListener('click', () => {
+  files.clear(); refreshUI(); renderTable();
+  document.getElementById('dlSection').style.display = 'none';
+});
+
+// ── PDF → text / images ────────────────────────────────────
+async function pdfToText(file) {
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  let out = '';
+  for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+    const page = await pdf.getPage(i);
+    const tc = await page.getTextContent();
+    out += tc.items.map(x => x.str).join(' ') + '\n';
+  }
+  return out.trim();
+}
+async function pdfToImages(file, maxPages = 2) {
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  const out = [];
+  for (let i = 1; i <= Math.min(pdf.numPages, maxPages); i++) {
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale: 1.6 });
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width; canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    out.push(canvas.toDataURL('image/jpeg', 0.80).split(',')[1]);
+  }
+  return out;
+}
+
+// ── Claude API ─────────────────────────────────────────────
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+
+const PROMPT = `この請求書から以下の情報を抽出してください。
+1. billingItem: 「電気料金」「水道料金」「ガス料金」のいずれか。不明なら「不明」。
+2. property: 物件名（建物名のみ、住所は除く）。なければ空文字。
+3. location: 場所・部屋番号。なければ空文字。
+JSONのみ返すこと: {"billingItem":"","property":"","location":""}`;
+
+async function callClaude(content) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'x-api-key':getKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+    body: JSON.stringify({ model:'claude-opus-4-5', max_tokens:512, messages:[{ role:'user', content }] }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  const raw = (json.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+  const m = raw.match(/\{[\s\S]*?\}/);
+  if (!m) throw new Error('JSONを取得できませんでした');
+  return JSON.parse(m[0]);
+}
+
+async function analyze(file) {
+  const text = await pdfToText(file);
+  let aiData;
+  if (text.length > 30) {
+    aiData = await callClaude([{ type:'text', text: PROMPT + '\n\nPDFテキスト:\n' + text.slice(0,5000) }]);
+  } else {
+    const imgs = await pdfToImages(file, 2);
+    aiData = await callClaude([
+      { type:'text', text: PROMPT + '\n\n以下はスキャンPDFの画像です。' },
+      ...imgs.map(b64 => ({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:b64 } }))
+    ]);
+  }
+  return { fileDate:todayStr(), billingItem:aiData.billingItem||'不明', property:aiData.property||'', location:aiData.location||'共用', docType:'管理' };
+}
+
+// ── Analyze ────────────────────────────────────────────────
+document.getElementById('btnAnalyze').addEventListener('click', async () => {
+  document.getElementById('btnAnalyze').disabled = true;
+  const pending = [...files.entries()].filter(([,v]) => v.status === 'pending');
+  for (const [id, entry] of pending) {
+    entry.status = 'reading';
+    updateRow(id);
+    try {
+      entry.data = await analyze(entry.file);
+      entry.status = 'done';
+    } catch(e) {
+      entry.status = 'error';
+      entry.data = { error: e.message || String(e) };
+    }
+    updateRow(id);
+  }
+  refreshBtn();
+  renderDL();
+});
+
+function updateRow(id) {
+  const entry = files.get(id);
+  if (!entry) return;
+  const tr = document.getElementById(`row${id}`);
+  if (!tr) return;
+  // 行番号を算出
+  const rows = [...document.getElementById('sheetBody').rows];
+  const num = rows.indexOf(tr) + 1;
+  tr.className = `row-${entry.status}`;
+  tr.innerHTML = buildRow(id, entry, num);
+  attachRowEvents(id);
+}
+
+// ── Download ───────────────────────────────────────────────
+function dlOne(id) {
+  const entry = files.get(id);
+  if (!entry) return;
+  const name = mkName(getFields(id));
+  const url = URL.createObjectURL(entry.file);
+  const a = Object.assign(document.createElement('a'), { href:url, download:name });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 8000);
+}
+
+async function downloadAll() {
+  const done = [...files.keys()].filter(id => files.get(id).status === 'done');
+  if (!done.length) return;
+  const btn = document.getElementById('btnDlAll');
+  btn.disabled = true; btn.textContent = '⏳ ダウンロード中...';
+  for (const id of done) {
+    dlOne(id);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  btn.disabled = false; btn.textContent = '⬇ 全件一括ダウンロード';
+}
+
+function renderDL() {
+  const done = [...files.values()].filter(v => v.status === 'done');
+  document.getElementById('dlSection').style.display = done.length ? 'flex' : 'none';
+}
+
+document.getElementById('btnDlAll').addEventListener('click', downloadAll);
+
+// ── Utils ──────────────────────────────────────────────────
+function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(n) { if(n<1024)return n+' B'; if(n<1048576)return(n/1024).toFixed(1)+' KB'; return(n/1048576).toFixed(1)+' MB'; }
+</script>
+</body>
+</html>
