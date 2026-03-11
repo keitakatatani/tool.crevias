@@ -43,22 +43,40 @@
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
   h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 4px; }
   h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; letter-spacing: .02em; }
+  .subtitle { font-size: 12px; color: var(--text-muted); letter-spacing: .02em; }
   .subtitle span { color: var(--accent2); font-weight: 500; }
-  .rule-badge { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); box-shadow: 0 2px 8px var(--shadow); }
+  .rule-badge { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 5px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted); box-shadow: 0 2px 8px var(--shadow); }
   .rule-badge b { color: var(--accent); font-weight: 500; }
   .btn-back { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; text-decoration: none; transition: all .2s; font-family: 'Noto Sans JP', sans-serif; box-shadow: 0 2px 8px var(--shadow); white-space: nowrap; }
   .btn-back:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
 
-  /* API Key */
-  .key-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 12px var(--shadow); }
+  /* ヘッダー下段：対応書類 + 命名規則を横並び */
+  .header-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+
+  /* API Key（折りたたみ対応） */
+  .key-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 12px var(--shadow); overflow: hidden; }
+  .key-header { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; user-select: none; }
+  .key-header:hover { background: var(--surface2); }
   .key-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); white-space: nowrap; }
+  .key-saved-mask { flex: 1; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-dim); letter-spacing: .15em; }
+  .key-toggle-btn { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; white-space: nowrap; cursor: pointer; transition: all .15s; }
+  .key-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .key-body { padding: 0 16px 10px; display: flex; align-items: center; gap: 10px; }
+  .key-body.hidden { display: none; }
   .key-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text); outline: none; transition: border-color .2s; }
   .key-input:focus { border-color: var(--accent); }
   .key-input::placeholder { color: var(--text-dim); }
   .key-badge { font-size: 10px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
   .key-badge.ok { background: rgba(43,170,114,.12); color: var(--success); border: 1px solid rgba(43,170,114,.25); }
   .key-badge.ng { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+  /* クイックワードバー */
+  .qword-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 7px 14px; margin-bottom: 10px; box-shadow: 0 2px 8px var(--shadow); flex-wrap: wrap; }
+  .qword-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+  .qword-chip { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: rgba(240,149,106,.12); border: 1px solid rgba(240,149,106,.35); color: var(--accent2); cursor: pointer; transition: all .15s; white-space: nowrap; user-select: none; }
+  .qword-chip:hover { background: rgba(240,149,106,.25); border-color: var(--accent2); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(240,149,106,.2); }
+  .qword-chip:active { transform: translateY(0); }
+  .qword-copied { font-size: 10px; color: var(--success); font-family: 'DM Mono', monospace; opacity: 0; transition: opacity .3s; margin-left: 4px; }
 
   /* Drop zone */
   .drop-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 32px 24px; text-align: center; cursor: pointer; transition: all .3s; background: var(--surface); position: relative; overflow: hidden; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; gap: 14px; box-shadow: 0 2px 12px var(--shadow); }
@@ -190,19 +208,33 @@
       <div>
         <div class="logo"><div class="logo-dot"></div>Utility Bill PDF Rename Tool</div>
         <h1>公共料金 <span>PDFリネーム</span>ツール</h1>
-        <p class="subtitle">対応書類：<span>払込票 / ビジネステプコ / 請求書 / 領収書</span></p>
-        <div class="rule-badge">
-          命名規則：<b>種別</b>_<b>領収日払込</b>_<b>支払種別</b>_<b>物件名</b>_<b>場所</b>.pdf
+        <div class="header-meta">
+          <p class="subtitle">対応書類：<span>払込票 / ビジネステプコ / 請求書 / 領収書</span></p>
+          <div class="rule-badge">命名規則：<b>種別</b>_<b>領収日</b>_<b>支払種別</b>_<b>物件名</b>_<b>場所</b>.pdf</div>
         </div>
       </div>
       <a class="btn-back" href="./index.html">← ポータルに戻る</a>
     </div>
   </header>
 
+  <!-- APIキー（折りたたみ） -->
   <div class="key-section">
-    <span class="key-label">API KEY</span>
-    <input class="key-input" id="apiKey" type="password" placeholder="sk-ant-api03-xxxx（初回のみ入力・自動保存）" autocomplete="off">
-    <span class="key-badge" id="keyBadge"></span>
+    <div class="key-header" id="keyHeader">
+      <span class="key-label">API KEY</span>
+      <span class="key-saved-mask" id="keySavedMask"></span>
+      <span class="key-badge" id="keyBadge"></span>
+      <span class="key-toggle-btn" id="keyToggleBtn">▼ 編集</span>
+    </div>
+    <div class="key-body hidden" id="keyBody">
+      <input class="key-input" id="apiKey" type="password" placeholder="sk-ant-api03-xxxx（初回のみ入力・自動保存）" autocomplete="off">
+    </div>
+  </div>
+
+  <!-- クイックワードバー -->
+  <div class="qword-bar">
+    <span class="qword-label">📋 よく使うワード</span>
+    <span class="qword-chip" onclick="copyWord('共用')">共用</span>
+    <span class="qword-copied" id="qwordCopied">コピーしました！</span>
   </div>
 
   <div class="drop-zone" id="dropZone">
@@ -229,7 +261,7 @@
           <th class="col-orig">元ファイル名</th>
           <th class="col-status">状態</th>
           <th class="col-type">種別</th>
-          <th class="col-stamp">領収日払込</th>
+          <th class="col-stamp">領収日</th>
           <th class="col-item">支払種別</th>
           <th class="col-prop">物件名</th>
           <th class="col-loc">場所</th>
@@ -283,11 +315,23 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 const files = new Map();
 let nextId = 0;
 
-// ── API Key ──────────────────────────────────────────────
-const apiKeyEl = document.getElementById('apiKey');
-const keyBadge = document.getElementById('keyBadge');
+// ── API Key（折りたたみ対応） ─────────────────────────────
+const apiKeyEl   = document.getElementById('apiKey');
+const keyBadge   = document.getElementById('keyBadge');
+const keyBody    = document.getElementById('keyBody');
+const keyToggle  = document.getElementById('keyToggleBtn');
+const keySavedMask = document.getElementById('keySavedMask');
+
 const savedKey = localStorage.getItem('anthropic_api_key') || '';
-if (savedKey) apiKeyEl.value = savedKey;
+if (savedKey) {
+  apiKeyEl.value = savedKey;
+  // 保存済みならデフォルトで折りたたむ
+  keyBody.classList.add('hidden');
+  keyToggle.textContent = '▼ 編集';
+} else {
+  keyBody.classList.remove('hidden');
+  keyToggle.textContent = '▲ 閉じる';
+}
 updateKeyBadge(savedKey);
 
 function getKey() { return apiKeyEl.value.trim(); }
@@ -295,13 +339,42 @@ function updateKeyBadge(key) {
   const ok = key.startsWith('sk-ant');
   keyBadge.textContent = ok ? '✓ 保存済み' : '未入力';
   keyBadge.className = 'key-badge ' + (ok ? 'ok' : 'ng');
+  keySavedMask.textContent = ok ? '••••••••••••••••••••••••••••••••' : '';
 }
+
+document.getElementById('keyHeader').addEventListener('click', () => {
+  const hidden = keyBody.classList.toggle('hidden');
+  keyToggle.textContent = hidden ? '▼ 編集' : '▲ 閉じる';
+});
+
 apiKeyEl.addEventListener('input', () => {
   const key = getKey();
   if (key.startsWith('sk-ant')) localStorage.setItem('anthropic_api_key', key);
   updateKeyBadge(key);
   refreshBtn();
 });
+
+// ── クイックワード ───────────────────────────────────────
+let copyTimer = null;
+function copyWord(word) {
+  // フォーカス中のinputに挿入、なければクリップボードにコピー
+  const active = document.activeElement;
+  if (active && active.classList.contains('cell-input')) {
+    const start = active.selectionStart;
+    const end   = active.selectionEnd;
+    const val   = active.value;
+    active.value = val.slice(0, start) + word + val.slice(end);
+    active.selectionStart = active.selectionEnd = start + word.length;
+    active.dispatchEvent(new Event('input'));
+  } else {
+    navigator.clipboard.writeText(word).catch(() => {});
+  }
+  // コピー完了メッセージ
+  const msg = document.getElementById('qwordCopied');
+  msg.style.opacity = '1';
+  clearTimeout(copyTimer);
+  copyTimer = setTimeout(() => { msg.style.opacity = '0'; }, 1500);
+}
 
 // ── Drag & Drop ──────────────────────────────────────────
 const dropZone = document.getElementById('dropZone');
@@ -364,7 +437,7 @@ function buildRow(id, entry, num) {
       <button class="type-tab ${tm}" id="tm${id}" onclick="setType(${id},'管理')">管理</button>
       <button class="type-tab ${to}" id="to${id}" onclick="setType(${id},'保有')">保有</button>
     </div></td>` +
-    `<td class="col-stamp"><input class="cell-input" id="st${id}" value="${esc(d.receiptStamp)}" placeholder="MMDD払込"></td>` +
+    `<td class="col-stamp"><input class="cell-input" id="st${id}" value="${esc(d.receiptStamp)}" placeholder="0310支払"></td>` +
     `<td class="col-item"><input class="cell-input" id="bi${id}" value="${esc(d.billingItem)}" placeholder="電気料金…"></td>` +
     `<td class="col-prop"><input class="cell-input" id="pr${id}" value="${esc(d.property)}" placeholder="物件名"></td>` +
     `<td class="col-loc"><input class="cell-input" id="lo${id}" value="${esc(d.location)}" placeholder="場所"></td>` +
@@ -564,8 +637,8 @@ const PROMPT = `この請求書・払込票から以下の情報を抽出して�
    - 電気料金（東京電力・ビジネスTEPCOなど）：「日附印」「収納印」のスタンプ日付
    - 水道料金：「領収日付印」枠内のスタンプ日付
    - ガス料金：領収印・収納印などのスタンプ日付
-   - 読み取れた場合：「MMDD払込」形式（例：3月10日→「0310払込」）
-   - スタンプなし・空欄・読み取れない場合：「未記入払込」
+   - 読み取れた場合：「MMDD支払」形式（例：3月10日→「0310支払」）
+   - スタンプなし・空欄・読み取れない場合：「支払」
 
 3. property: 物件名（建物名のみ、住所・番地は除く）。なければ空文字。
 
@@ -601,7 +674,7 @@ async function analyze(file) {
   }
   return {
     docType:      '管理',
-    receiptStamp: aiData.receiptStamp || '未記入払込',
+    receiptStamp: aiData.receiptStamp || '支払',
     billingItem:  aiData.billingItem  || '不明',
     property:     aiData.property     || '',
     location:     aiData.location     || '共用',
