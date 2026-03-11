@@ -35,18 +35,9 @@
   }
   .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
 
-  /* 戻るボタン */
-  .btn-back {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
-    font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; text-decoration: none;
-    transition: all .2s; margin-bottom: 20px; font-family: 'Noto Sans JP', sans-serif;
-    box-shadow: 0 2px 8px var(--shadow);
-  }
-  .btn-back:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-light); transform: translateX(-2px); }
-
   /* ヘッダー */
   header { margin-bottom: 20px; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
   .logo { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
   .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); animation: pulse 2s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
@@ -54,6 +45,16 @@
   h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .rule-badge { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); box-shadow: 0 2px 8px var(--shadow); }
   .rule-badge b { color: var(--accent); font-weight: 500; }
+
+  /* 戻るボタン */
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+    padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; text-decoration: none;
+    transition: all .2s; font-family: 'Noto Sans JP', sans-serif;
+    box-shadow: 0 2px 8px var(--shadow); white-space: nowrap;
+  }
+  .btn-back:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
 
   /* API Key */
   .key-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 12px var(--shadow); }
@@ -161,8 +162,11 @@
   .btn-dl-all:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
   /* テーブル最大10行スクロール */
-  .sheet-tbody-scroll { max-height: calc(36px * 10 + 2px); overflow-y: auto; display: block; }
-  .sheet-table thead, .sheet-table tbody tr { display: table; width: 100%; table-layout: fixed; }
+  .sheet-wrap { overflow: hidden; }
+  .sheet-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .sheet-table thead { display: table; width: 100%; table-layout: fixed; }
+  .sheet-table tbody { display: block; max-height: calc(34px * 10); overflow-y: auto; width: 100%; }
+  .sheet-table tbody tr { display: table; width: 100%; table-layout: fixed; }
 
   /* PDFビューアパネル */
   .pdf-viewer-wrap {
@@ -199,13 +203,16 @@
 <body>
 <div class="container">
 
-  <a class="btn-back" href="./index.html">← ポータルに戻る</a>
-
   <header>
-    <div class="logo"><div class="logo-dot"></div>Invoice PDF Rename Tool</div>
-    <h1>請求書 <span>PDFリネーム</span>ツール</h1>
-    <div class="rule-badge">
-      命名規則：<b>作成日</b>_<b>種別</b>_<b>支払種別</b>_<b>領収日払込</b>_<b>物件名</b>_<b>場所</b>.pdf
+    <div class="header-top">
+      <div>
+        <div class="logo"><div class="logo-dot"></div>Invoice PDF Rename Tool</div>
+        <h1>請求書 <span>PDFリネーム</span>ツール</h1>
+        <div class="rule-badge">
+          命名規則：<b>作成日</b>_<b>種別</b>_<b>支払種別</b>_<b>領収日払込</b>_<b>物件名</b>_<b>場所</b>.pdf
+        </div>
+      </div>
+      <a class="btn-back" href="./index.html">← ポータルに戻る</a>
     </div>
   </header>
 
@@ -249,14 +256,10 @@
           <th class="col-rm"></th>
         </tr>
       </thead>
+      <tbody id="sheetBody">
+        <tr><td colspan="12" class="sheet-empty">PDFをドロップして追加してください</td></tr>
+      </tbody>
     </table>
-    <div class="sheet-tbody-scroll">
-      <table class="sheet-table">
-        <tbody id="sheetBody">
-          <tr><td colspan="12" class="sheet-empty">PDFをドロップして追加してください</td></tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 
   <div id="dlSection" style="display:none" class="dl-section">
@@ -325,10 +328,7 @@ fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fil
 function addFiles(list) {
   const pdfs = list.filter(f => f.name.toLowerCase().endsWith('.pdf'));
   if (!pdfs.length) return alert('PDFファイルのみ対応しています');
-  pdfs.forEach(f => {
-    const blobUrl = URL.createObjectURL(f); // ドロップ時点で生成
-    files.set(++nextId, { file: f, blobUrl, status: 'pending', data: null });
-  });
+  pdfs.forEach(f => { files.set(++nextId, { file: f, status: 'pending', data: null }); });
   refreshUI(); renderTable();
 }
 
@@ -432,11 +432,7 @@ function mkName(d) {
   return `${s(d.fileDate)}_${s(d.docType)}_${s(d.billingItem)}_${s(d.receiptStamp)}_${s(d.property)}_${s(d.location)}.pdf`;
 }
 
-function rm(id) {
-  const entry = files.get(id);
-  if (entry?.blobUrl) URL.revokeObjectURL(entry.blobUrl);
-  files.delete(id); refreshUI(); renderTable(); renderDL();
-}
+function rm(id) { files.delete(id); refreshUI(); renderTable(); renderDL(); }
 
 function refreshUI() {
   const has = files.size > 0;
@@ -451,7 +447,6 @@ function refreshBtn() {
 }
 
 document.getElementById('btnClear').addEventListener('click', () => {
-  files.forEach(e => { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); });
   files.clear(); refreshUI(); renderTable();
   document.getElementById('dlSection').style.display = 'none';
 });
