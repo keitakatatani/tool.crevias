@@ -53,16 +53,9 @@
   /* ヘッダー下段：対応書類 + 命名規則を横並び */
   .header-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 
-  /* API Key（折りたたみ対応） */
-  .key-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 12px var(--shadow); overflow: hidden; }
-  .key-header { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; user-select: none; }
-  .key-header:hover { background: var(--surface2); }
+  /* API Key */
+  .key-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 12px var(--shadow); }
   .key-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); white-space: nowrap; }
-  .key-saved-mask { flex: 1; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-dim); letter-spacing: .15em; }
-  .key-toggle-btn { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; white-space: nowrap; cursor: pointer; transition: all .15s; }
-  .key-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .key-body { padding: 0 16px 10px; display: flex; align-items: center; gap: 10px; }
-  .key-body.hidden { display: none; }
   .key-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text); outline: none; transition: border-color .2s; }
   .key-input:focus { border-color: var(--accent); }
   .key-input::placeholder { color: var(--text-dim); }
@@ -217,17 +210,11 @@
     </div>
   </header>
 
-  <!-- APIキー（折りたたみ） -->
+  <!-- APIキー -->
   <div class="key-section">
-    <div class="key-header" id="keyHeader">
-      <span class="key-label">API KEY</span>
-      <span class="key-saved-mask" id="keySavedMask"></span>
-      <span class="key-badge" id="keyBadge"></span>
-      <span class="key-toggle-btn" id="keyToggleBtn">▼ 編集</span>
-    </div>
-    <div class="key-body hidden" id="keyBody">
-      <input class="key-input" id="apiKey" type="password" placeholder="sk-ant-api03-xxxx（初回のみ入力・自動保存）" autocomplete="off">
-    </div>
+    <span class="key-label">API KEY</span>
+    <input class="key-input" id="apiKey" type="password" placeholder="sk-ant-api03-xxxx（初回のみ入力・自動保存）" autocomplete="off">
+    <span class="key-badge" id="keyBadge"></span>
   </div>
 
   <!-- クイックワードバー -->
@@ -315,23 +302,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 const files = new Map();
 let nextId = 0;
 
-// ── API Key（折りたたみ対応） ─────────────────────────────
-const apiKeyEl   = document.getElementById('apiKey');
-const keyBadge   = document.getElementById('keyBadge');
-const keyBody    = document.getElementById('keyBody');
-const keyToggle  = document.getElementById('keyToggleBtn');
-const keySavedMask = document.getElementById('keySavedMask');
-
+// ── API Key ──────────────────────────────────────────────
+const apiKeyEl = document.getElementById('apiKey');
+const keyBadge = document.getElementById('keyBadge');
 const savedKey = localStorage.getItem('anthropic_api_key') || '';
-if (savedKey) {
-  apiKeyEl.value = savedKey;
-  // 保存済みならデフォルトで折りたたむ
-  keyBody.classList.add('hidden');
-  keyToggle.textContent = '▼ 編集';
-} else {
-  keyBody.classList.remove('hidden');
-  keyToggle.textContent = '▲ 閉じる';
-}
+if (savedKey) apiKeyEl.value = savedKey;
 updateKeyBadge(savedKey);
 
 function getKey() { return apiKeyEl.value.trim(); }
@@ -339,14 +314,7 @@ function updateKeyBadge(key) {
   const ok = key.startsWith('sk-ant');
   keyBadge.textContent = ok ? '✓ 保存済み' : '未入力';
   keyBadge.className = 'key-badge ' + (ok ? 'ok' : 'ng');
-  keySavedMask.textContent = ok ? '••••••••••••••••••••••••••••••••' : '';
 }
-
-document.getElementById('keyHeader').addEventListener('click', () => {
-  const hidden = keyBody.classList.toggle('hidden');
-  keyToggle.textContent = hidden ? '▼ 編集' : '▲ 閉じる';
-});
-
 apiKeyEl.addEventListener('input', () => {
   const key = getKey();
   if (key.startsWith('sk-ant')) localStorage.setItem('anthropic_api_key', key);
