@@ -8,15 +8,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #0e0e0e;
-    --paper: #f5f2ec;
-    --paper2: #ede9e0;
-    --accent: #c8401a;
-    --accent2: #e8821a;
-    --muted: #8a8478;
-    --border: #d4cfc4;
+    --ink: #2a1f2a;
+    --paper: #fff8f8;
+    --paper2: #fdf3f3;
+    --accent: #e05a7a;
+    --accent2: #f0956a;
+    --muted: #9a8090;
+    --border: #f0dede;
     --card: #ffffff;
-    --shadow: rgba(14,14,14,0.08);
+    --shadow: rgba(224,90,122,0.10);
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,16 +29,18 @@
     overflow-x: hidden;
   }
 
-  /* グリッドテクスチャ背景 */
+  /* グラデーション背景 */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     background-image:
+      radial-gradient(circle at 15% 20%, rgba(224,90,122,.06) 0%, transparent 50%),
+      radial-gradient(circle at 85% 80%, rgba(240,149,106,.06) 0%, transparent 50%),
       linear-gradient(var(--border) 1px, transparent 1px),
       linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 32px 32px;
-    opacity: 0.4;
+    background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+    opacity: 0.7;
     pointer-events: none;
     z-index: 0;
   }
@@ -47,7 +49,7 @@
   header {
     position: relative;
     z-index: 10;
-    border-bottom: 2px solid var(--ink);
+    border-bottom: 2px solid var(--border);
     background: var(--paper);
     padding: 0 40px;
     height: 52px;
@@ -69,7 +71,7 @@
   .brand-mark {
     width: 26px;
     height: 26px;
-    background: var(--ink);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
     border-radius: 3px;
     display: flex;
     align-items: center;
@@ -184,7 +186,7 @@
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 2px;
     background: var(--border);
-    border: 2px solid var(--ink);
+    border: 1.5px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 32px;
@@ -235,17 +237,17 @@
     flex-shrink: 0;
   }
   .status-live {
-    background: rgba(16, 160, 80, 0.1);
-    color: #10a050;
-    border: 1px solid rgba(16, 160, 80, 0.25);
+    background: rgba(43, 170, 114, 0.1);
+    color: #2baa72;
+    border: 1px solid rgba(43, 170, 114, 0.25);
   }
   .status-soon {
-    background: rgba(200, 64, 26, 0.08);
+    background: rgba(224, 90, 122, 0.08);
     color: var(--accent);
-    border: 1px solid rgba(200, 64, 26, 0.2);
+    border: 1px solid rgba(224, 90, 122, 0.2);
   }
   .status-dev {
-    background: rgba(138, 132, 120, 0.1);
+    background: rgba(154, 128, 144, 0.1);
     color: var(--muted);
     border: 1px solid var(--border);
   }
@@ -293,8 +295,8 @@
 
   /* お知らせセクション */
   .notice-box {
-    background: var(--ink);
-    color: var(--paper);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #ffffff;
     border-radius: 8px;
     padding: 20px 24px;
     display: flex;
@@ -321,7 +323,7 @@
   footer {
     position: relative;
     z-index: 1;
-    border-top: 2px solid var(--ink);
+    border-top: 1.5px solid var(--border);
     padding: 16px 40px;
     display: flex;
     align-items: center;
