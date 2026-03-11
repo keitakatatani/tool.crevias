@@ -266,7 +266,10 @@ fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fil
 function addFiles(list) {
   const pdfs = list.filter(f => f.name.toLowerCase().endsWith('.pdf'));
   if (!pdfs.length) return alert('PDFファイルのみ対応しています');
-  pdfs.forEach(f => { files.set(++nextId, { file: f, status: 'pending', data: null }); });
+  pdfs.forEach(f => {
+    const blobUrl = URL.createObjectURL(f); // ドロップ時点で生成
+    files.set(++nextId, { file: f, blobUrl, status: 'pending', data: null });
+  });
   refreshUI(); renderTable();
 }
 
@@ -370,7 +373,11 @@ function mkName(d) {
   return `${s(d.fileDate)}_${s(d.docType)}_${s(d.billingItem)}_${s(d.receiptStamp)}_${s(d.property)}_${s(d.location)}.pdf`;
 }
 
-function rm(id) { files.delete(id); refreshUI(); renderTable(); renderDL(); }
+function rm(id) {
+  const entry = files.get(id);
+  if (entry?.blobUrl) URL.revokeObjectURL(entry.blobUrl);
+  files.delete(id); refreshUI(); renderTable(); renderDL();
+}
 
 function refreshUI() {
   const has = files.size > 0;
@@ -385,27 +392,17 @@ function refreshBtn() {
 }
 
 document.getElementById('btnClear').addEventListener('click', () => {
+  files.forEach(e => { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); });
   files.clear(); refreshUI(); renderTable();
   document.getElementById('dlSection').style.display = 'none';
 });
 
-// ── PDF 別タブプレビュー（元PDFをそのまま開く）──────────
+// ── PDF 別ウィンドウで開く ────────────────────────────────
 function openPreview(id) {
   const entry = files.get(id);
-  if (!entry) return;
-
-  // PDFファイルをBlobURLに変換してそのまま新タブで開く
-  const blobUrl = URL.createObjectURL(entry.file);
-  const a = document.createElement('a');
-  a.href   = blobUrl;
-  a.target = '_blank';
-  a.rel    = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  // メモリ解放（少し待つ）
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  if (!entry?.blobUrl) return;
+  // 既存ウィンドウを再利用するためにnameをIDで固定
+  window.open(entry.blobUrl, `pdf_preview_${id}`, 'width=900,height=960,scrollbars=yes,resizable=yes,noopener');
 }
 
 // ── PDF → text / images ─────────────────────────────────
