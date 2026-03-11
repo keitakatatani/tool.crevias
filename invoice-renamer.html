@@ -5,183 +5,173 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>請求書 PDF リネームツール</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
-
   :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #1a1a25;
-    --border: #2a2a3a;
-    --border2: #1e1e2e;
-    --accent: #4f6ef7;
-    --accent2: #7c3aed;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --error: #ef4444;
-    --text: #e8e8f0;
-    --text-muted: #6b6b85;
-    --text-dim: #3a3a52;
+    --bg: #fff8f8;
+    --surface: #ffffff;
+    --surface2: #fdf3f3;
+    --border: #f0dede;
+    --border2: #f7ecec;
+    --accent: #e05a7a;
+    --accent2: #f0956a;
+    --accent-light: rgba(224,90,122,.08);
+    --success: #2baa72;
+    --warning: #e8972a;
+    --error: #e04040;
+    --text: #2a1f2a;
+    --text-muted: #9a8090;
+    --text-dim: #d0c0c8;
+    --shadow: rgba(224,90,122,.10);
   }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
   body::before {
     content: ''; position: fixed; inset: 0;
-    background-image: linear-gradient(var(--text-dim) 1px, transparent 1px), linear-gradient(90deg, var(--text-dim) 1px, transparent 1px);
-    background-size: 40px 40px; opacity: 0.12; pointer-events: none; z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(224,90,122,.06) 0%, transparent 50%),
+      radial-gradient(circle at 85% 80%, rgba(240,149,106,.06) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
   }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
 
-  .container { max-width: 1100px; margin: 0 auto; padding: 20px 18px 40px; position: relative; z-index: 1; }
+  /* 戻るボタン */
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; text-decoration: none;
+    transition: all .2s; margin-bottom: 20px; font-family: 'Noto Sans JP', sans-serif;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .btn-back:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-light); transform: translateX(-2px); }
 
-  header { margin-bottom: 14px; }
-  .logo { font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
-  .logo-dot { width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s ease-in-out infinite; }
-  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-  h1 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 6px; }
-  h1 span { background: linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-  .rule-badge { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; font-size:11px; font-family:'Space Mono',monospace; color:var(--text-muted); }
-  .rule-badge b { color:var(--accent); font-weight:400; }
+  /* ヘッダー */
+  header { margin-bottom: 20px; }
+  .logo { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 8px; }
+  h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .rule-badge { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); box-shadow: 0 2px 8px var(--shadow); }
+  .rule-badge b { color: var(--accent); font-weight: 500; }
 
   /* API Key */
-  .key-section { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin-bottom:10px; display:flex; align-items:center; gap:10px; }
-  .key-label { font-size:11px; font-family:'Space Mono',monospace; color:var(--text-muted); white-space:nowrap; }
-  .key-input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:7px 11px; font-size:12px; font-family:'Space Mono',monospace; color:var(--text); outline:none; transition:border-color .2s; }
-  .key-input:focus { border-color:var(--accent); }
-  .key-input::placeholder { color:var(--text-dim); }
-  .key-badge { font-size:10px; font-family:'Space Mono',monospace; padding:4px 9px; border-radius:5px; white-space:nowrap; flex-shrink:0; }
-  .key-badge.ok { background:rgba(16,185,129,.15); color:var(--success); }
-  .key-badge.ng { background:rgba(107,107,133,.15); color:var(--text-muted); }
+  .key-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 12px var(--shadow); }
+  .key-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); white-space: nowrap; }
+  .key-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text); outline: none; transition: border-color .2s; }
+  .key-input:focus { border-color: var(--accent); }
+  .key-input::placeholder { color: var(--text-dim); }
+  .key-badge { font-size: 10px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .key-badge.ok { background: rgba(43,170,114,.12); color: var(--success); border: 1px solid rgba(43,170,114,.25); }
+  .key-badge.ng { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
 
   /* Drop zone */
-  .drop-zone { border:2px dashed var(--border); border-radius:10px; padding:36px 24px; text-align:center; cursor:pointer; transition:all .3s; background:var(--surface); position:relative; overflow:hidden; margin-bottom:12px; display:flex; align-items:center; justify-content:center; gap:12px; }
-  .drop-zone::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 0%, rgba(79,110,247,.08) 0%, transparent 70%); opacity:0; transition:opacity .3s; }
-  .drop-zone.dragging { border-color:var(--accent); background:rgba(79,110,247,.05); }
-  .drop-zone.dragging::before { opacity:1; }
-  .drop-icon { width:32px;height:32px;flex-shrink:0;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:15px; }
-  .drop-title { font-size:13px; font-weight:500; }  .drop-text { text-align:left; }
-  .drop-sub { font-size:11px; color:var(--text-muted); }
-  .drop-sub b { color:var(--accent); font-weight:500; }
-  #fileInput { display:none; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 32px 24px; text-align: center; cursor: pointer; transition: all .3s; background: var(--surface); position: relative; overflow: hidden; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; gap: 14px; box-shadow: 0 2px 12px var(--shadow); }
+  .drop-zone::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(224,90,122,.08) 0%, transparent 70%); opacity: 0; transition: opacity .3s; }
+  .drop-zone.dragging { border-color: var(--accent); background: var(--accent-light); }
+  .drop-zone.dragging::before { opacity: 1; }
+  .drop-icon { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px var(--shadow); }
+  .drop-text { text-align: left; }
+  .drop-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .drop-sub { font-size: 11px; color: var(--text-muted); }
+  .drop-sub b { color: var(--accent); font-weight: 600; }
+  #fileInput { display: none; }
 
   /* Action bar */
-  .action-bar { display:flex; gap:9px; align-items:center; margin-bottom:12px; }
-  .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 20px; border-radius:8px; font-size:13px; font-weight:500; font-family:'Noto Sans JP',sans-serif; cursor:pointer; transition:all .2s; border:none; }
-  .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; flex:1; }
-  .btn-primary:hover:not(:disabled) { opacity:.88; transform:translateY(-1px); }
-  .btn-primary:disabled { opacity:.35; cursor:not-allowed; }
-  .btn-secondary { background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); }
-  .btn-secondary:hover { color:var(--text); border-color:var(--text-muted); }
-  .count-chip { font-family:'Space Mono',monospace; font-size:10px; padding:2px 7px; background:rgba(79,110,247,.2); border-radius:20px; color:var(--accent); }
+  .action-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 500; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; transition: all .2s; border: none; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; flex: 1; justify-content: center; box-shadow: 0 4px 16px var(--shadow); }
+  .btn-primary:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); box-shadow: 0 2px 8px var(--shadow); }
+  .btn-secondary:hover { color: var(--text); border-color: var(--text-muted); }
+  .count-chip { font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 8px; background: rgba(255,255,255,.25); border-radius: 20px; }
 
-  /* ── スプレッドシートテーブル ── */
-  .sheet-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:12px; }
-  .sheet-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-
-  .sheet-table thead tr { background:var(--surface2); }
-  .sheet-table thead th {
-    padding: 6px 8px;
-    font-size: 9px; font-family:'Space Mono',monospace; font-weight:700; letter-spacing:.08em;
-    color: var(--text-muted); text-align:left;
-    border-bottom: 2px solid var(--border);
-    border-right: 1px solid var(--border);
-    white-space: nowrap; user-select:none;
-  }
-  .sheet-table thead th:last-child { border-right:none; }
-
-  .sheet-table tbody tr { border-bottom:1px solid var(--border2); transition:background .1s; }
-  .sheet-table tbody tr:last-child { border-bottom:none; }
-  .sheet-table tbody tr:hover { background:rgba(79,110,247,.04); }
-  .sheet-table tbody tr.row-reading { background:rgba(245,158,11,.04); }
-  .sheet-table tbody tr.row-error   { background:rgba(239,68,68,.04); }
-
-  .sheet-table tbody td { padding:2px 3px; border-right:1px solid var(--border2); vertical-align:middle; }
-  .sheet-table tbody td:last-child { border-right:none; }
+  /* テーブル */
+  .sheet-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 4px 20px var(--shadow); }
+  .sheet-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .sheet-table thead tr { background: linear-gradient(135deg, rgba(224,90,122,.06), rgba(240,149,106,.06)); }
+  .sheet-table thead th { padding: 8px 8px; font-size: 9px; font-family: 'DM Mono', monospace; font-weight: 500; letter-spacing: .1em; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border2); white-space: nowrap; user-select: none; }
+  .sheet-table thead th:last-child { border-right: none; }
+  .sheet-table tbody tr { border-bottom: 1px solid var(--border2); transition: background .1s; }
+  .sheet-table tbody tr:last-child { border-bottom: none; }
+  .sheet-table tbody tr:hover { background: rgba(224,90,122,.03); }
+  .sheet-table tbody tr.row-reading { background: rgba(232,151,42,.04); }
+  .sheet-table tbody tr.row-error   { background: rgba(224,64,64,.04); }
+  .sheet-table tbody td { padding: 3px 3px; border-right: 1px solid var(--border2); vertical-align: middle; }
+  .sheet-table tbody td:last-child { border-right: none; }
 
   /* 列幅 */
-  .col-num    { width:28px; }
-  .col-orig   { width:150px; }
-  .col-status { width:64px; }
-  .col-date   { width:84px; }
-  .col-item   { width:96px; }
-  .col-prop   { width:110px; }
-  .col-loc    { width:72px; }
-  .col-type   { width:68px; }
-  .col-newname{ } /* flex */
-  .col-dl     { width:44px; }
-  .col-rm     { width:26px; }
+  .col-num    { width: 28px; }
+  .col-orig   { width: 140px; }
+  .col-status { width: 64px; }
+  .col-date   { width: 84px; }
+  .col-item   { width: 96px; }
+  .col-stamp  { width: 90px; }
+  .col-prop   { width: 110px; }
+  .col-loc    { width: 70px; }
+  .col-type   { width: 80px; }
+  .col-newname { }
+  .col-dl     { width: 44px; }
+  .col-rm     { width: 26px; }
 
-  /* 行番号 */
-  td.col-num { text-align:center; font-size:10px; font-family:'Space Mono',monospace; color:var(--text-dim); background:var(--surface2); border-right:2px solid var(--border) !important; user-select:none; }
+  td.col-num { text-align: center; font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-dim); background: rgba(224,90,122,.03); border-right: 1px solid var(--border) !important; user-select: none; }
+  .orig-name { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; padding: 0 4px; }
+  td.col-status { text-align: center; }
+  .status-chip { display: inline-block; font-family: 'DM Mono', monospace; font-size: 8px; font-weight: 700; letter-spacing: .1em; padding: 2px 6px; border-radius: 10px; }
+  .s-pending { background: rgba(154,128,144,.12); color: var(--text-muted); }
+  .s-reading { background: rgba(232,151,42,.15);  color: var(--warning); }
+  .s-done    { background: rgba(43,170,114,.12);  color: var(--success); }
+  .s-error   { background: rgba(224,64,64,.12);   color: var(--error); }
 
-  /* 元ファイル名 */
-  .orig-name { font-size:10px; font-family:'Space Mono',monospace; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; padding:0 4px; }
+  .cell-input { width: 100%; height: 28px; background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 2px 6px; font-size: 11px; font-family: 'Noto Sans JP', sans-serif; color: var(--text); outline: none; transition: border-color .15s, background .15s; }
+  .cell-input:hover  { border-color: var(--border); background: var(--surface2); }
+  .cell-input:focus  { border-color: var(--accent); background: var(--surface2); box-shadow: 0 0 0 2px rgba(224,90,122,.12); }
+  .cell-input:disabled { color: var(--text-dim); cursor: default; }
+  .cell-input::placeholder { color: var(--text-dim); font-size: 10px; }
 
-  /* ステータスチップ */
-  td.col-status { text-align:center; }
-  .status-chip { display:inline-block; font-family:'Space Mono',monospace; font-size:8px; font-weight:700; letter-spacing:.1em; padding:2px 5px; border-radius:3px; }
-  .s-pending { background:rgba(107,107,133,.2); color:var(--text-muted); }
-  .s-reading { background:rgba(245,158,11,.15); color:var(--warning); }
-  .s-done    { background:rgba(16,185,129,.15);  color:var(--success); }
-  .s-error   { background:rgba(239,68,68,.15);   color:var(--error); }
+  /* 種別トグル */
+  .type-tabs { display: flex; height: 26px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 1px 3px; }
+  .type-tab { flex: 1; border: none; background: transparent; color: var(--text-muted); font-size: 10px; font-family: 'Noto Sans JP', sans-serif; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .type-tab.active-manage { background: linear-gradient(135deg, rgba(224,90,122,.2), rgba(240,149,106,.2)); color: var(--accent); }
+  .type-tab.active-own   { background: rgba(43,170,114,.15); color: var(--success); }
 
-  /* セル入力 */
-  .cell-input {
-    width:100%; height:26px; background:transparent; border:1px solid transparent;
-    border-radius:3px; padding:2px 5px; font-size:11px;
-    font-family:'Noto Sans JP',sans-serif; color:var(--text); outline:none;
-    transition:border-color .15s, background .15s;
-  }
-  .cell-input:hover  { border-color:var(--border); background:var(--surface2); }
-  .cell-input:focus  { border-color:var(--accent); background:var(--surface2); box-shadow:0 0 0 2px rgba(79,110,247,.15); }
-  .cell-input:disabled { color:var(--text-dim); cursor:default; }
-  .cell-input::placeholder { color:var(--text-dim); font-size:10px; }
+  /* 新ファイル名（クリックで別ウィンドウ） */
+  .new-name-text { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; padding: 0 5px; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; transition: color .15s; }
+  .new-name-text:hover { color: var(--accent2); }
 
-  /* 種別タブ */
-  .type-tabs { display:flex; height:24px; background:var(--surface2); border:1px solid var(--border); border-radius:3px; overflow:hidden; }
-  .type-tab { flex:1; border:none; background:transparent; color:var(--text-muted); font-size:10px; font-family:'Noto Sans JP',sans-serif; font-weight:600; cursor:pointer; transition:all .15s; }
-  .type-tab.active-manage { background:rgba(79,110,247,.3); color:#818cf8; }
-  .type-tab.active-own    { background:rgba(16,185,129,.3); color:var(--success); }
-
-  /* 新ファイル名 */
-  .new-name-text { font-size:10px; font-family:'Space Mono',monospace; color:var(--accent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; padding:0 5px; }
-
-  /* DLボタン */
-  td.col-dl { text-align:center; }
-  .btn-dl-row { background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.3); border-radius:4px; color:var(--success); font-size:10px; padding:2px 6px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-weight:500; transition:all .15s; white-space:nowrap; }
-  .btn-dl-row:hover { background:rgba(16,185,129,.25); }
-
-  /* 削除ボタン */
-  td.col-rm { text-align:center; }
-  .btn-rm { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; line-height:1; padding:1px 3px; border-radius:3px; transition:color .15s; }
-  .btn-rm:hover { color:var(--error); }
-
-  /* 解析中・エラー */
-  .reading-cell { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--text-muted); padding:0 5px; }
-  .dots { display:inline-flex; gap:2px; }
-  .dots span { width:3px;height:3px;background:var(--warning);border-radius:50%;animation:dot 1.3s ease-in-out infinite; }
-  .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+  td.col-dl { text-align: center; }
+  .btn-dl-row { background: rgba(43,170,114,.1); border: 1px solid rgba(43,170,114,.25); border-radius: 5px; color: var(--success); font-size: 10px; padding: 2px 6px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-weight: 500; transition: all .15s; white-space: nowrap; }
+  .btn-dl-row:hover { background: rgba(43,170,114,.22); }
+  td.col-rm { text-align: center; }
+  .btn-rm { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 15px; line-height: 1; padding: 1px 3px; border-radius: 4px; transition: color .15s; }
+  .btn-rm:hover { color: var(--error); }
+  .reading-cell { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-muted); padding: 0 5px; }
+  .dots { display: inline-flex; gap: 2px; }
+  .dots span { width: 3px; height: 3px; background: var(--warning); border-radius: 50%; animation: dot 1.3s ease-in-out infinite; }
+  .dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
   @keyframes dot{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
-  .error-cell { font-size:10px; color:var(--error); padding:0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .error-cell { font-size: 10px; color: var(--error); padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sheet-empty { text-align: center; padding: 24px; font-size: 12px; color: var(--text-dim); }
 
-  /* 空状態 */
-  .sheet-empty { text-align:center; padding:18px; font-size:12px; color:var(--text-dim); }
-
-  /* 一括DL */
-  .dl-section { background:var(--surface); border:1px solid rgba(16,185,129,.3); border-radius:10px; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; }
-  .dl-title { font-size:13px; font-weight:500; color:var(--success); }
-  .btn-dl-all { background:linear-gradient(135deg,var(--success),#059669); border:none; border-radius:7px; color:#fff; font-size:12px; padding:7px 16px; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-weight:500; transition:all .2s; }
-  .btn-dl-all:hover { opacity:.85; transform:translateY(-1px); }
-  .btn-dl-all:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+  .dl-section { background: var(--surface); border: 1px solid rgba(43,170,114,.25); border-radius: 12px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 16px rgba(43,170,114,.08); }
+  .dl-title { font-size: 13px; font-weight: 600; color: var(--success); }
+  .btn-dl-all { background: linear-gradient(135deg, var(--success), #059669); border: none; border-radius: 8px; color: #fff; font-size: 12px; padding: 8px 18px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-weight: 500; transition: all .2s; box-shadow: 0 4px 12px rgba(43,170,114,.3); }
+  .btn-dl-all:hover { opacity: .88; transform: translateY(-1px); }
+  .btn-dl-all:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 </style>
 </head>
 <body>
 <div class="container">
+
+  <a class="btn-back" href="./index.html">← ポータルに戻る</a>
+
   <header>
     <div class="logo"><div class="logo-dot"></div>Invoice PDF Rename Tool</div>
     <h1>請求書 <span>PDFリネーム</span>ツール</h1>
-    <div class="rule-badge">命名規則：<b>作成日</b>_<b>明細内容</b>_<b>物件名</b>_<b>場所</b>_<b>種別</b>.pdf</div>
+    <div class="rule-badge">
+      命名規則：<b>作成日</b>_<b>種別</b>_<b>支払種別</b>_<b>領収日払込</b>_<b>物件名</b>_<b>場所</b>.pdf
+    </div>
   </header>
 
   <div class="key-section">
@@ -214,17 +204,18 @@
           <th class="col-orig">元ファイル名</th>
           <th class="col-status">状態</th>
           <th class="col-date">日付</th>
-          <th class="col-item">明細内容</th>
+          <th class="col-item">支払種別</th>
+          <th class="col-stamp">領収日払込</th>
           <th class="col-prop">物件名</th>
           <th class="col-loc">場所</th>
           <th class="col-type">種別</th>
-          <th class="col-newname">新ファイル名</th>
+          <th class="col-newname">新ファイル名（クリックでPDF確認）</th>
           <th class="col-dl">DL</th>
           <th class="col-rm"></th>
         </tr>
       </thead>
       <tbody id="sheetBody">
-        <tr><td colspan="11" class="sheet-empty">PDFをドロップして追加してください</td></tr>
+        <tr><td colspan="12" class="sheet-empty">PDFをドロップして追加してください</td></tr>
       </tbody>
     </table>
   </div>
@@ -233,6 +224,7 @@
     <div class="dl-title">✅ 解析完了</div>
     <button class="btn-dl-all" id="btnDlAll">⬇ 全件一括ダウンロード</button>
   </div>
+
 </div>
 
 <script>
@@ -242,7 +234,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 const files = new Map();
 let nextId = 0;
 
-// ── API Key ────────────────────────────────────────────────
+// ── API Key ──────────────────────────────────────────────
 const apiKeyEl = document.getElementById('apiKey');
 const keyBadge = document.getElementById('keyBadge');
 const savedKey = localStorage.getItem('anthropic_api_key') || '';
@@ -262,7 +254,7 @@ apiKeyEl.addEventListener('input', () => {
   refreshBtn();
 });
 
-// ── Drag & Drop ────────────────────────────────────────────
+// ── Drag & Drop ──────────────────────────────────────────
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 dropZone.addEventListener('click', () => fileInput.click());
@@ -274,32 +266,24 @@ fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fil
 function addFiles(list) {
   const pdfs = list.filter(f => f.name.toLowerCase().endsWith('.pdf'));
   if (!pdfs.length) return alert('PDFファイルのみ対応しています');
-  pdfs.forEach(f => {
-    const id = ++nextId;
-    files.set(id, { file: f, status: 'pending', data: null });
-  });
-  refreshUI();
-  renderTable();
+  pdfs.forEach(f => { files.set(++nextId, { file: f, status: 'pending', data: null }); });
+  refreshUI(); renderTable();
 }
 
-// ── テーブル描画 ───────────────────────────────────────────
-const FIELD_ORDER = ['fd','bi','pr','lo'];
-
+// ── テーブル描画 ────────────────────────────────────────
 function renderTable() {
   const tbody = document.getElementById('sheetBody');
   if (!files.size) {
-    tbody.innerHTML = '<tr><td colspan="11" class="sheet-empty">PDFをドロップして追加してください</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="sheet-empty">PDFをドロップして追加してください</td></tr>';
     return;
   }
   tbody.innerHTML = '';
   let num = 1;
   for (const [id, entry] of files) {
     const tr = document.createElement('tr');
-    tr.id = `row${id}`;
-    tr.className = `row-${entry.status}`;
+    tr.id = `row${id}`; tr.className = `row-${entry.status}`;
     tr.innerHTML = buildRow(id, entry, num++);
-    tbody.appendChild(tr);
-    attachRowEvents(id);
+    tbody.appendChild(tr); attachRowEvents(id);
   }
 }
 
@@ -307,40 +291,34 @@ function buildRow(id, entry, num) {
   const { file, status, data } = entry;
   const chipMap = { pending:['s-pending','PENDING'], reading:['s-reading','READING'], done:['s-done','DONE'], error:['s-error','ERROR'] };
   const [cls, lbl] = chipMap[status] || chipMap.pending;
-
   const numCell    = `<td class="col-num">${num}</td>`;
   const origCell   = `<td class="col-orig"><span class="orig-name" title="${esc(file.name)}">${esc(file.name)}</span></td>`;
   const statusCell = `<td class="col-status"><span class="status-chip ${cls}">${lbl}</span></td>`;
   const rmCell     = `<td class="col-rm"><button class="btn-rm" onclick="rm(${id})">×</button></td>`;
 
-  if (status === 'pending') {
-    return numCell + origCell + statusCell + `<td colspan="6"></td><td class="col-dl"></td>` + rmCell;
-  }
-  if (status === 'reading') {
-    return numCell + origCell + statusCell +
-      `<td colspan="6"><div class="reading-cell">解析中<div class="dots"><span></span><span></span><span></span></div></div></td><td class="col-dl"></td>` + rmCell;
-  }
-  if (status === 'error') {
-    return numCell + origCell + statusCell +
-      `<td colspan="6"><div class="error-cell">⚠️ ${esc(data?.error||'エラー')}</div></td><td class="col-dl"></td>` + rmCell;
-  }
+  if (status === 'pending') return numCell + origCell + statusCell + `<td colspan="7"></td><td class="col-dl"></td>` + rmCell;
+  if (status === 'reading') return numCell + origCell + statusCell + `<td colspan="7"><div class="reading-cell">解析中<div class="dots"><span></span><span></span><span></span></div></div></td><td class="col-dl"></td>` + rmCell;
+  if (status === 'error')   return numCell + origCell + statusCell + `<td colspan="7"><div class="error-cell">⚠️ ${esc(data?.error||'エラー')}</div></td><td class="col-dl"></td>` + rmCell;
 
   // done
+  // 表示列順：日付 → 支払種別 → 領収日払込 → 物件名 → 場所 → 種別 → 新ファイル名
+  // ファイル名順：作成日 → 種別 → 支払種別 → 領収日払込 → 物件名 → 場所（mkNameで制御）
   const d = data;
   const tm = d.docType === '管理' ? 'active-manage' : '';
-  const to = d.docType === '保有' ? 'active-own'    : '';
+  const to = d.docType === '保有' ? 'active-own' : '';
   const newName = mkName(d);
 
   return numCell + origCell + statusCell +
     `<td class="col-date"><input class="cell-input" id="fd${id}" value="${esc(d.fileDate)}" placeholder="YYYYMMDD"></td>` +
     `<td class="col-item"><input class="cell-input" id="bi${id}" value="${esc(d.billingItem)}" placeholder="電気料金…"></td>` +
+    `<td class="col-stamp"><input class="cell-input" id="st${id}" value="${esc(d.receiptStamp)}" placeholder="MMDD払込"></td>` +
     `<td class="col-prop"><input class="cell-input" id="pr${id}" value="${esc(d.property)}" placeholder="物件名"></td>` +
-    `<td class="col-loc"><input class="cell-input" id="lo${id}" value="${esc(d.location)}" placeholder="共用"></td>` +
+    `<td class="col-loc"><input class="cell-input" id="lo${id}" value="${esc(d.location)}" placeholder="場所"></td>` +
     `<td class="col-type"><div class="type-tabs" id="tt${id}">
       <button class="type-tab ${tm}" id="tm${id}" onclick="setType(${id},'管理')">管理</button>
       <button class="type-tab ${to}" id="to${id}" onclick="setType(${id},'保有')">保有</button>
     </div></td>` +
-    `<td class="col-newname"><span class="new-name-text" id="nn${id}" title="${esc(newName)}">${esc(newName)}</span></td>` +
+    `<td class="col-newname"><span class="new-name-text" id="nn${id}" onclick="openPreview(${id})" title="クリックでPDF確認">${esc(newName)}</span></td>` +
     `<td class="col-dl"><button class="btn-dl-row" onclick="dlOne(${id})">⬇DL</button></td>` +
     rmCell;
 }
@@ -348,40 +326,14 @@ function buildRow(id, entry, num) {
 function attachRowEvents(id) {
   const entry = files.get(id);
   if (!entry || entry.status !== 'done') return;
-  const fieldMap = { fd:'fileDate', bi:'billingItem', pr:'property', lo:'location' };
-  FIELD_ORDER.forEach(fname => {
+  const fieldMap = { fd:'fileDate', bi:'billingItem', st:'receiptStamp', pr:'property', lo:'location' };
+  ['fd','bi','st','pr','lo'].forEach(fname => {
     const el = document.getElementById(`${fname}${id}`);
     if (!el) return;
-    el.addEventListener('input', () => {
-      if (entry.data) entry.data[fieldMap[fname]] = el.value;
-      upd(id);
-    });
-    el.addEventListener('keydown', e => handleKey(e, id, fname));
+    el.addEventListener('input', () => { if (entry.data) entry.data[fieldMap[fname]] = el.value; upd(id); });
   });
 }
 
-// ── キー操作 ──────────────────────────────────────────────
-function handleKey(e, id, fname) {
-  const ids = [...files.keys()].filter(k => files.get(k).status === 'done');
-  const myIdx = ids.indexOf(id);
-  const cur = FIELD_ORDER.indexOf(fname);
-
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    if (cur === FIELD_ORDER.length - 1 && myIdx < ids.length - 1) {
-      document.getElementById(`${FIELD_ORDER[0]}${ids[myIdx+1]}`)?.focus();
-    } else {
-      document.getElementById(`${FIELD_ORDER[(cur+1) % FIELD_ORDER.length]}${id}`)?.focus();
-    }
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (myIdx < ids.length - 1) {
-      document.getElementById(`${fname}${ids[myIdx+1]}`)?.focus();
-    }
-  }
-}
-
-// ── 種別タブ ──────────────────────────────────────────────
 function setType(id, type) {
   const entry = files.get(id);
   if (!entry?.data) return;
@@ -391,40 +343,35 @@ function setType(id, type) {
   upd(id);
 }
 
-// ── ファイル名更新 ─────────────────────────────────────────
 function upd(id) {
   const entry = files.get(id);
   if (!entry?.data) return;
   const name = mkName(entry.data);
   const el = document.getElementById(`nn${id}`);
-  if (el) { el.textContent = name; el.title = name; }
+  if (el) { el.textContent = name; }
   renderDL();
 }
 
 function getFields(id) {
   const entry = files.get(id);
   return {
-    fileDate:    document.getElementById(`fd${id}`)?.value ?? entry?.data?.fileDate ?? '',
-    billingItem: document.getElementById(`bi${id}`)?.value ?? entry?.data?.billingItem ?? '',
-    property:    document.getElementById(`pr${id}`)?.value ?? entry?.data?.property ?? '',
-    location:    document.getElementById(`lo${id}`)?.value ?? entry?.data?.location ?? '',
-    docType:     entry?.data?.docType ?? '管理',
+    fileDate:     document.getElementById(`fd${id}`)?.value ?? entry?.data?.fileDate ?? '',
+    docType:      entry?.data?.docType ?? '管理',
+    billingItem:  document.getElementById(`bi${id}`)?.value ?? entry?.data?.billingItem ?? '',
+    receiptStamp: document.getElementById(`st${id}`)?.value ?? entry?.data?.receiptStamp ?? '',
+    property:     document.getElementById(`pr${id}`)?.value ?? entry?.data?.property ?? '',
+    location:     document.getElementById(`lo${id}`)?.value ?? entry?.data?.location ?? '',
   };
 }
 
+// ファイル名順：作成日_種別_支払種別_領収日払込_物件名_場所
 function mkName(d) {
   const s = v => (String(v||'').trim().replace(/[\\/:*?"<>|\r\n]/g,'_') || '不明');
-  return `${s(d.fileDate)}_${s(d.billingItem)}_${s(d.property)}_${s(d.location)}_${s(d.docType)}.pdf`;
+  return `${s(d.fileDate)}_${s(d.docType)}_${s(d.billingItem)}_${s(d.receiptStamp)}_${s(d.property)}_${s(d.location)}.pdf`;
 }
 
-function rm(id) {
-  files.delete(id);
-  refreshUI();
-  renderTable();
-  renderDL();
-}
+function rm(id) { files.delete(id); refreshUI(); renderTable(); renderDL(); }
 
-// ── UI ─────────────────────────────────────────────────────
 function refreshUI() {
   const has = files.size > 0;
   document.getElementById('actionBar').style.display = has ? 'flex' : 'none';
@@ -442,7 +389,26 @@ document.getElementById('btnClear').addEventListener('click', () => {
   document.getElementById('dlSection').style.display = 'none';
 });
 
-// ── PDF → text / images ────────────────────────────────────
+// ── PDF 別タブプレビュー（元PDFをそのまま開く）──────────
+function openPreview(id) {
+  const entry = files.get(id);
+  if (!entry) return;
+
+  // PDFファイルをBlobURLに変換してそのまま新タブで開く
+  const blobUrl = URL.createObjectURL(entry.file);
+  const a = document.createElement('a');
+  a.href   = blobUrl;
+  a.target = '_blank';
+  a.rel    = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // メモリ解放（少し待つ）
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+}
+
+// ── PDF → text / images ─────────────────────────────────
 async function pdfToText(file) {
   const ab = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
@@ -469,23 +435,33 @@ async function pdfToImages(file, maxPages = 2) {
   return out;
 }
 
-// ── Claude API ─────────────────────────────────────────────
+// ── Claude API ───────────────────────────────────────────
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
 }
 
-const PROMPT = `この請求書から以下の情報を抽出してください。
-1. billingItem: 「電気料金」「水道料金」「ガス料金」のいずれか。不明なら「不明」。
-2. property: 物件名（建物名のみ、住所は除く）。なければ空文字。
-3. location: 場所・部屋番号。なければ空文字。
-JSONのみ返すこと: {"billingItem":"","property":"","location":""}`;
+const PROMPT = `この払込票・請求書から以下の情報を抽出してください。
+
+1. billingItem: 支払種別。「電気料金」「水道料金」「ガス料金」のいずれか。不明なら「不明」。
+
+2. receiptStamp: 領収日付印の日付を読み取る。
+   - 電気料金の場合：「日附印」枠内のスタンプの日付
+   - 水道料金の場合：「領収日付印」枠内のスタンプの日付
+   - ガス料金の場合：領収印・収納印などのスタンプの日付
+   - 読み取れた場合：「MMDD払込」形式（例：1月19日→「0119払込」）
+   - スタンプなし・空欄・読み取れない場合：「未記入払込」
+
+3. property: 物件名（建物名のみ）。なければ空文字。
+4. location: 場所・部屋番号。なければ空文字。
+
+JSONのみ返すこと: {"billingItem":"","receiptStamp":"","property":"","location":""}`;
 
 async function callClaude(content) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'x-api-key':getKey(), 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-    body: JSON.stringify({ model:'claude-opus-4-5', max_tokens:512, messages:[{ role:'user', content }] }),
+    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:512, messages:[{ role:'user', content }] }),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
@@ -507,46 +483,34 @@ async function analyze(file) {
       ...imgs.map(b64 => ({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data:b64 } }))
     ]);
   }
-  return { fileDate:todayStr(), billingItem:aiData.billingItem||'不明', property:aiData.property||'', location:aiData.location||'共用', docType:'管理' };
+  return { fileDate:todayStr(), docType:'管理', billingItem:aiData.billingItem||'不明', receiptStamp:aiData.receiptStamp||'未記入払込', property:aiData.property||'', location:aiData.location||'' };
 }
 
-// ── Analyze ────────────────────────────────────────────────
+// ── Analyze ──────────────────────────────────────────────
 document.getElementById('btnAnalyze').addEventListener('click', async () => {
   document.getElementById('btnAnalyze').disabled = true;
   const pending = [...files.entries()].filter(([,v]) => v.status === 'pending');
   for (const [id, entry] of pending) {
-    entry.status = 'reading';
-    updateRow(id);
-    try {
-      entry.data = await analyze(entry.file);
-      entry.status = 'done';
-    } catch(e) {
-      entry.status = 'error';
-      entry.data = { error: e.message || String(e) };
-    }
+    entry.status = 'reading'; updateRow(id);
+    try { entry.data = await analyze(entry.file); entry.status = 'done'; }
+    catch(e) { entry.status = 'error'; entry.data = { error: e.message||String(e) }; }
     updateRow(id);
   }
-  refreshBtn();
-  renderDL();
+  refreshBtn(); renderDL();
 });
 
 function updateRow(id) {
-  const entry = files.get(id);
-  if (!entry) return;
-  const tr = document.getElementById(`row${id}`);
-  if (!tr) return;
-  // 行番号を算出
-  const rows = [...document.getElementById('sheetBody').rows];
-  const num = rows.indexOf(tr) + 1;
+  const entry = files.get(id); if (!entry) return;
+  const tr = document.getElementById(`row${id}`); if (!tr) return;
+  const num = [...document.getElementById('sheetBody').rows].indexOf(tr) + 1;
   tr.className = `row-${entry.status}`;
   tr.innerHTML = buildRow(id, entry, num);
   attachRowEvents(id);
 }
 
-// ── Download ───────────────────────────────────────────────
+// ── Download ─────────────────────────────────────────────
 function dlOne(id) {
-  const entry = files.get(id);
-  if (!entry) return;
+  const entry = files.get(id); if (!entry) return;
   const name = mkName(getFields(id));
   const url = URL.createObjectURL(entry.file);
   const a = Object.assign(document.createElement('a'), { href:url, download:name });
@@ -559,10 +523,7 @@ async function downloadAll() {
   if (!done.length) return;
   const btn = document.getElementById('btnDlAll');
   btn.disabled = true; btn.textContent = '⏳ ダウンロード中...';
-  for (const id of done) {
-    dlOne(id);
-    await new Promise(r => setTimeout(r, 300));
-  }
+  for (const id of done) { dlOne(id); await new Promise(r => setTimeout(r, 350)); }
   btn.disabled = false; btn.textContent = '⬇ 全件一括ダウンロード';
 }
 
@@ -573,9 +534,7 @@ function renderDL() {
 
 document.getElementById('btnDlAll').addEventListener('click', downloadAll);
 
-// ── Utils ──────────────────────────────────────────────────
 function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmt(n) { if(n<1024)return n+' B'; if(n<1048576)return(n/1024).toFixed(1)+' KB'; return(n/1048576).toFixed(1)+' MB'; }
 </script>
 </body>
 </html>
