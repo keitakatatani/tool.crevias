@@ -159,6 +159,26 @@
   .btn-dl-all { background: linear-gradient(135deg, var(--success), #059669); border: none; border-radius: 8px; color: #fff; font-size: 12px; padding: 8px 18px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-weight: 500; transition: all .2s; box-shadow: 0 4px 12px rgba(43,170,114,.3); }
   .btn-dl-all:hover { opacity: .88; transform: translateY(-1px); }
   .btn-dl-all:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  /* トースト案内 */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(16px);
+    background: #2a1f2a; color: #fff; border-radius: 12px;
+    padding: 14px 22px; display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 8px 32px rgba(42,31,42,.35); z-index: 9999;
+    opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
+    white-space: nowrap; font-size: 13px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .toast-icon { font-size: 20px; flex-shrink: 0; }
+  .toast-body {}
+  .toast-title { font-weight: 700; margin-bottom: 3px; font-size: 13px; }
+  .toast-sub { font-size: 11px; opacity: .7; }
+  .toast-steps { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .toast-step { background: rgba(255,255,255,.12); border-radius: 6px; padding: 3px 10px; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+  .toast-arrow { opacity: .5; font-size: 10px; }
+  .toast-close { margin-left: 8px; background: rgba(255,255,255,.15); border: none; color: #fff; width: 24px; height: 24px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s; }
+  .toast-close:hover { background: rgba(255,255,255,.28); }
 </style>
 </head>
 <body>
@@ -209,7 +229,7 @@
           <th class="col-prop">物件名</th>
           <th class="col-loc">場所</th>
           <th class="col-type">種別</th>
-          <th class="col-newname">新ファイル名（クリックでPDF確認）</th>
+          <th class="col-newname">新ファイル名（クリック → 右クリック「新しいウィンドウで開く」）</th>
           <th class="col-dl">DL</th>
           <th class="col-rm"></th>
         </tr>
@@ -225,6 +245,20 @@
     <button class="btn-dl-all" id="btnDlAll">⬇ 全件一括ダウンロード</button>
   </div>
 
+</div>
+
+<!-- 右クリック案内トースト -->
+<div class="toast" id="toast">
+  <div class="toast-icon">📄</div>
+  <div class="toast-body">
+    <div class="toast-title">PDFが新しいタブで開きました</div>
+    <div class="toast-steps">
+      <span class="toast-step">📌 タブ内でPDFを右クリック</span>
+      <span class="toast-arrow">→</span>
+      <span class="toast-step">🪟「新しいウィンドウで開く」</span>
+    </div>
+  </div>
+  <button class="toast-close" id="toastClose">✕</button>
 </div>
 
 <script>
@@ -397,13 +431,25 @@ document.getElementById('btnClear').addEventListener('click', () => {
   document.getElementById('dlSection').style.display = 'none';
 });
 
-// ── PDF 別ウィンドウで開く ────────────────────────────────
+// ── PDF 別タブで開く＋右クリック案内 ────────────────────
+let toastTimer = null;
 function openPreview(id) {
   const entry = files.get(id);
   if (!entry?.blobUrl) return;
-  // 既存ウィンドウを再利用するためにnameをIDで固定
-  window.open(entry.blobUrl, `pdf_preview_${id}`, 'width=900,height=960,scrollbars=yes,resizable=yes,noopener');
+
+  // 新しいタブで開く
+  window.open(entry.blobUrl, '_blank');
+
+  // トースト表示
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 8000);
 }
+document.getElementById('toastClose').addEventListener('click', () => {
+  document.getElementById('toast').classList.remove('show');
+  clearTimeout(toastTimer);
+});
 
 // ── PDF → text / images ─────────────────────────────────
 async function pdfToText(file) {
