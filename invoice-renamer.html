@@ -160,25 +160,40 @@
   .btn-dl-all:hover { opacity: .88; transform: translateY(-1px); }
   .btn-dl-all:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
-  /* トースト案内 */
-  .toast {
-    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(16px);
-    background: #2a1f2a; color: #fff; border-radius: 12px;
-    padding: 14px 22px; display: flex; align-items: center; gap: 14px;
-    box-shadow: 0 8px 32px rgba(42,31,42,.35); z-index: 9999;
-    opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
-    white-space: nowrap; font-size: 13px;
+  /* テーブル最大10行スクロール */
+  .sheet-tbody-scroll { max-height: calc(36px * 10 + 2px); overflow-y: auto; display: block; }
+  .sheet-table thead, .sheet-table tbody tr { display: table; width: 100%; table-layout: fixed; }
+
+  /* PDFビューアパネル */
+  .pdf-viewer-wrap {
+    margin-top: 14px; border-radius: 14px; overflow: hidden;
+    border: 2px solid var(--border); background: var(--surface);
+    box-shadow: 0 4px 20px var(--shadow);
+    display: none;
   }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-  .toast-icon { font-size: 20px; flex-shrink: 0; }
-  .toast-body {}
-  .toast-title { font-weight: 700; margin-bottom: 3px; font-size: 13px; }
-  .toast-sub { font-size: 11px; opacity: .7; }
-  .toast-steps { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-  .toast-step { background: rgba(255,255,255,.12); border-radius: 6px; padding: 3px 10px; font-size: 11px; display: flex; align-items: center; gap: 4px; }
-  .toast-arrow { opacity: .5; font-size: 10px; }
-  .toast-close { margin-left: 8px; background: rgba(255,255,255,.15); border: none; color: #fff; width: 24px; height: 24px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s; }
-  .toast-close:hover { background: rgba(255,255,255,.28); }
+  .pdf-viewer-wrap.open { display: block; }
+  .pdf-viewer-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; background: linear-gradient(135deg, rgba(224,90,122,.07), rgba(240,149,106,.07));
+    border-bottom: 1px solid var(--border);
+  }
+  .pdf-viewer-icon { width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .pdf-viewer-title { flex: 1; font-size: 11px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pdf-viewer-pager { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .pdf-page-info { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; min-width: 52px; text-align: center; }
+  .btn-pager { width: 28px; height: 28px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .btn-pager:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .btn-pager:disabled { opacity: .28; cursor: not-allowed; }
+  .btn-viewer-close { width: 28px; height: 28px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; margin-left: 4px; flex-shrink: 0; }
+  .btn-viewer-close:hover { border-color: var(--error); color: var(--error); background: rgba(224,64,64,.08); }
+  .pdf-viewer-body {
+    height: 480px; overflow-y: auto; display: flex;
+    align-items: flex-start; justify-content: center;
+    background: #ede8e5; padding: 16px;
+  }
+  .pdf-viewer-body canvas { display: block; max-width: 100%; border-radius: 4px; box-shadow: 0 6px 24px rgba(42,31,42,.22); }
+  .pdf-viewer-loading { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin: auto; padding: 40px 0; }
+  .pdf-viewer-loading .dots span { background: var(--accent); }
 </style>
 </head>
 <body>
@@ -229,15 +244,19 @@
           <th class="col-prop">物件名</th>
           <th class="col-loc">場所</th>
           <th class="col-type">種別</th>
-          <th class="col-newname">新ファイル名（クリック → 右クリック「新しいウィンドウで開く」）</th>
+          <th class="col-newname">新ファイル名（クリックで下にPDF表示）</th>
           <th class="col-dl">DL</th>
           <th class="col-rm"></th>
         </tr>
       </thead>
-      <tbody id="sheetBody">
-        <tr><td colspan="12" class="sheet-empty">PDFをドロップして追加してください</td></tr>
-      </tbody>
     </table>
+    <div class="sheet-tbody-scroll">
+      <table class="sheet-table">
+        <tbody id="sheetBody">
+          <tr><td colspan="12" class="sheet-empty">PDFをドロップして追加してください</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div id="dlSection" style="display:none" class="dl-section">
@@ -245,20 +264,26 @@
     <button class="btn-dl-all" id="btnDlAll">⬇ 全件一括ダウンロード</button>
   </div>
 
-</div>
-
-<!-- 右クリック案内トースト -->
-<div class="toast" id="toast">
-  <div class="toast-icon">📄</div>
-  <div class="toast-body">
-    <div class="toast-title">PDFが新しいタブで開きました</div>
-    <div class="toast-steps">
-      <span class="toast-step">📌 タブ内でPDFを右クリック</span>
-      <span class="toast-arrow">→</span>
-      <span class="toast-step">🪟「新しいウィンドウで開く」</span>
+  <!-- PDFビューアパネル -->
+  <div class="pdf-viewer-wrap" id="pdfViewerWrap">
+    <div class="pdf-viewer-header">
+      <div class="pdf-viewer-icon">📄</div>
+      <div class="pdf-viewer-title" id="pdfViewerTitle">PDFプレビュー</div>
+      <div class="pdf-viewer-pager">
+        <button class="btn-pager" id="btnPdfPrev">‹</button>
+        <span class="pdf-page-info" id="pdfPageInfo">1 / 1</span>
+        <button class="btn-pager" id="btnPdfNext">›</button>
+      </div>
+      <button class="btn-viewer-close" id="btnViewerClose" title="閉じる">✕</button>
+    </div>
+    <div class="pdf-viewer-body" id="pdfViewerBody">
+      <div class="pdf-viewer-loading">
+        <div class="dots"><span></span><span></span><span></span></div>
+        読み込み中...
+      </div>
     </div>
   </div>
-  <button class="toast-close" id="toastClose">✕</button>
+
 </div>
 
 <script>
@@ -431,24 +456,63 @@ document.getElementById('btnClear').addEventListener('click', () => {
   document.getElementById('dlSection').style.display = 'none';
 });
 
-// ── PDF 別タブで開く＋右クリック案内 ────────────────────
-let toastTimer = null;
-function openPreview(id) {
+// ── ページ内PDFビューア ───────────────────────────────────
+let viewerPdf = null, viewerPage = 1, viewerTotal = 1;
+
+async function openPreview(id) {
   const entry = files.get(id);
-  if (!entry?.blobUrl) return;
+  if (!entry) return;
 
-  // 新しいタブで開く
-  window.open(entry.blobUrl, '_blank');
+  const wrap  = document.getElementById('pdfViewerWrap');
+  const title = document.getElementById('pdfViewerTitle');
+  const body  = document.getElementById('pdfViewerBody');
 
-  // トースト表示
-  const toast = document.getElementById('toast');
-  toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 8000);
+  title.textContent = mkName(getFields(id));
+  body.innerHTML = '<div class="pdf-viewer-loading"><div class="dots"><span></span><span></span><span></span></div>読み込み中...</div>';
+  wrap.classList.add('open');
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const ab = await entry.file.arrayBuffer();
+    viewerPdf   = await pdfjsLib.getDocument({ data: ab }).promise;
+    viewerTotal = viewerPdf.numPages;
+    viewerPage  = 1;
+    await renderViewerPage(1);
+  } catch(e) {
+    body.innerHTML = `<div class="pdf-viewer-loading" style="color:var(--error)">⚠️ ${e.message}</div>`;
+  }
 }
-document.getElementById('toastClose').addEventListener('click', () => {
-  document.getElementById('toast').classList.remove('show');
-  clearTimeout(toastTimer);
+
+async function renderViewerPage(num) {
+  const body = document.getElementById('pdfViewerBody');
+  document.getElementById('pdfPageInfo').textContent  = `${num} / ${viewerTotal}`;
+  document.getElementById('btnPdfPrev').disabled = num <= 1;
+  document.getElementById('btnPdfNext').disabled = num >= viewerTotal;
+
+  const page  = await viewerPdf.getPage(num);
+  const wrap  = document.getElementById('pdfViewerBody');
+  const w     = wrap.clientWidth - 32;
+  const base  = page.getViewport({ scale: 1 });
+  const scale = Math.min(2.4, w / base.width);
+  const vp    = page.getViewport({ scale });
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = vp.width;
+  canvas.height = vp.height;
+  body.innerHTML = '';
+  body.appendChild(canvas);
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+}
+
+document.getElementById('btnPdfPrev').addEventListener('click', async () => {
+  if (viewerPage > 1) { viewerPage--; await renderViewerPage(viewerPage); }
+});
+document.getElementById('btnPdfNext').addEventListener('click', async () => {
+  if (viewerPage < viewerTotal) { viewerPage++; await renderViewerPage(viewerPage); }
+});
+document.getElementById('btnViewerClose').addEventListener('click', () => {
+  document.getElementById('pdfViewerWrap').classList.remove('open');
+  viewerPdf = null;
 });
 
 // ── PDF → text / images ─────────────────────────────────
