@@ -177,6 +177,17 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
 /* Polygon snap indicator */
 .snap-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid white;position:absolute;pointer-events:none;display:none;transform:translate(-50%,-50%);box-shadow:0 0 6px var(--accent)}
 
+
+/* Selection overlay */
+.sel-box{position:absolute;pointer-events:none;border:2px dashed var(--accent);border-radius:3px;box-shadow:0 0 0 1px rgba(224,90,122,.25);display:none}
+.sel-handle{position:absolute;width:10px;height:10px;background:white;border:2px solid var(--accent);border-radius:2px;pointer-events:all;transform:translate(-50%,-50%);box-shadow:0 1px 4px var(--shadow)}
+.sel-del{position:absolute;top:-14px;right:-14px;width:22px;height:22px;border-radius:50%;background:var(--error);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:all;box-shadow:0 2px 6px rgba(224,64,64,.4);border:2px solid white;line-height:1}
+.sel-del:hover{transform:scale(1.15)}
+/* Selected shape properties panel */
+.sel-props{display:none;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 16px;background:linear-gradient(135deg,rgba(224,90,122,.07),rgba(240,149,106,.07));border:1.5px solid var(--accent);border-radius:12px;margin-bottom:14px;box-shadow:0 2px 12px var(--shadow2)}
+.sel-props-label{font-size:11px;font-weight:600;color:var(--accent);font-family:"DM Mono",monospace;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.sel-props-sep{width:1px;height:24px;background:rgba(224,90,122,.2);flex-shrink:0}
+
 /* Action bar */
 .draw-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
 
@@ -322,13 +333,23 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
         <span style="flex:1"></span>
         <span style="font-size:11px;color:var(--text-muted)">
           <span class="kbd">Ctrl+Z</span> 元に戻す &nbsp;
-          <span class="kbd">Ctrl+Y</span> やり直し
+          <span class="kbd">Ctrl+Y</span> やり直し &nbsp;
+          <span class="kbd">Del</span> 選択削除
         </span>
       </div>
 
       <!-- Tool palette -->
       <div class="tool-palette">
         <!-- Shape tools -->
+        <div class="palette-group">
+          <span class="tool-label">選択</span>
+          <button class="tool-btn" id="tool-select" onclick="setTool('select')" title="選択・移動・リサイズ">
+            <svg viewBox="0 0 24 24"><path d="M4 4l7 18 3-7 7-3z" stroke-width="2"/></svg>
+          </button>
+        </div>
+
+        <div class="palette-sep"></div>
+
         <div class="palette-group">
           <span class="tool-label">図形</span>
           <!-- Line -->
@@ -407,12 +428,68 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
         </div>
       </div>
 
+      <!-- Selected shape properties -->
+      <div class="sel-props" id="selProps">
+        <span class="sel-props-label">✦ 選択中の図形を編集</span>
+        <div class="sel-props-sep"></div>
+
+        <div class="palette-group">
+          <span class="tool-label">色</span>
+          <div class="color-swatches" id="selColorSwatches">
+            <div class="swatch" style="background:#e05a7a" data-color="#e05a7a" onclick="applySelColor(this)"></div>
+            <div class="swatch" style="background:#e04040" data-color="#e04040" onclick="applySelColor(this)"></div>
+            <div class="swatch" style="background:#f0956a" data-color="#f0956a" onclick="applySelColor(this)"></div>
+            <div class="swatch" style="background:#e8c02a" data-color="#e8c02a" onclick="applySelColor(this)"></div>
+            <div class="swatch" style="background:#2baa72" data-color="#2baa72" onclick="applySelColor(this)"></div>
+            <div class="swatch" style="background:#3a7bd5" data-color="#3a7bd5" onclick="applySelColor(this)"></div>
+            <div class="swatch" style="background:#7c5cbf" data-color="#7c5cbf" onclick="applySelColor(this)"></div>
+            <div class="swatch" style="background:#2a1f2a" data-color="#2a1f2a" onclick="applySelColor(this)"></div>
+            <input type="color" id="selCustomColor" value="#e05a7a" oninput="applySelCustomColor(this.value)"
+              style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:1px;background:none" title="カスタムカラー">
+          </div>
+        </div>
+
+        <div class="sel-props-sep"></div>
+
+        <div class="palette-group">
+          <span class="tool-label">太さ</span>
+          <div class="stroke-btns">
+            <button class="stroke-btn" id="sel-sw-1" onclick="applySelStroke(1.5)" title="細い">
+              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="1.5"/></svg>
+            </button>
+            <button class="stroke-btn" id="sel-sw-2" onclick="applySelStroke(3)" title="中">
+              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="3"/></svg>
+            </button>
+            <button class="stroke-btn" id="sel-sw-3" onclick="applySelStroke(5)" title="太い">
+              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="5"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="sel-props-sep"></div>
+
+        <div class="palette-group">
+          <span class="tool-label">塗り</span>
+          <button class="fill-btn" id="selFillToggle" onclick="applySelFill()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            枠のみ
+          </button>
+        </div>
+      </div>
+
       <!-- Canvas area -->
       <div class="draw-canvas-wrap" id="drawCanvasWrap">
         <div class="draw-canvas-inner" id="drawCanvasInner">
           <canvas id="pdfRenderCanvas"></canvas>
           <canvas id="drawCanvas"></canvas>
           <div class="snap-dot" id="snapDot"></div>
+          <div class="sel-box" id="selBox">
+            <div class="sel-handle" id="sh-tl" data-dir="tl" style="cursor:nwse-resize"></div>
+            <div class="sel-handle" id="sh-tr" data-dir="tr" style="cursor:nesw-resize"></div>
+            <div class="sel-handle" id="sh-bl" data-dir="bl" style="cursor:nesw-resize"></div>
+            <div class="sel-handle" id="sh-br" data-dir="br" style="cursor:nwse-resize"></div>
+            <div class="sel-del" id="selDel" title="削除">✕</div>
+          </div>
         </div>
       </div>
 
@@ -773,6 +850,7 @@ async function loadDrawFile(file) {
 }
 
 async function renderDrawPage() {
+  hideSelBox(); selectedIdx = -1;
   drawVp = await renderPageToCanvas(drawPdfJsDoc, drawCurrentPage, pdfRenderCanvas, drawScale);
   drawCanvas.width = drawVp.width;
   drawCanvas.height = drawVp.height;
@@ -793,21 +871,22 @@ document.getElementById('drawNextPage').addEventListener('click', async () => {
 function setTool(tool) {
   currentTool = tool;
   polygonPoints = []; isDrawing = false; snapDot.style.display = 'none';
+  if (tool !== 'select') { hideSelBox(); selectedIdx = -1; }
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tool-' + tool).classList.add('active');
-  drawCanvas.style.cursor = tool === 'polygon' ? 'crosshair' : 'crosshair';
+  drawCanvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
 }
 
 function setColor(el) {
   currentColor = el.dataset.color;
-  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('#colorSwatches .swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('customColor').value = currentColor;
 }
 
 function setCustomColor(val) {
   currentColor = val;
-  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('#colorSwatches .swatch').forEach(s => s.classList.remove('active'));
 }
 
 function setStroke(w) {
@@ -824,6 +903,66 @@ function toggleFill() {
   btn.innerHTML = fillEnabled
     ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 塗りあり`
     : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 枠のみ`;
+}
+
+// ── Apply property changes to the selected shape ──
+function applySelColor(el) {
+  document.querySelectorAll('#selColorSwatches .swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('selCustomColor').value = el.dataset.color;
+  applySelProp('color', el.dataset.color);
+}
+function applySelCustomColor(val) {
+  document.querySelectorAll('#selColorSwatches .swatch').forEach(s => s.classList.remove('active'));
+  applySelProp('color', val);
+}
+function applySelStroke(w) {
+  document.querySelectorAll('#selProps .stroke-btn').forEach(b => b.classList.remove('active'));
+  const map = { 1.5: 'sel-sw-1', 3: 'sel-sw-2', 5: 'sel-sw-3' };
+  if (map[w]) document.getElementById(map[w]).classList.add('active');
+  applySelProp('stroke', w);
+}
+function applySelFill() {
+  if (selectedIdx < 0) return;
+  const s = getShapes(drawCurrentPage)[selectedIdx];
+  saveUndo();
+  s.fill = !s.fill;
+  syncSelFillBtn(s.fill);
+  redrawAllShapes();
+}
+function applySelProp(key, val) {
+  if (selectedIdx < 0) return;
+  saveUndo();
+  getShapes(drawCurrentPage)[selectedIdx][key] = val;
+  redrawAllShapes();
+}
+
+// Sync the sel-props panel UI to reflect the selected shape's current values
+function syncSelProps(s) {
+  // color swatches
+  const hex = s.color || '#e05a7a';
+  document.querySelectorAll('#selColorSwatches .swatch').forEach(sw => {
+    sw.classList.toggle('active', sw.dataset.color === hex);
+  });
+  document.getElementById('selCustomColor').value = hex;
+  // stroke
+  document.querySelectorAll('#selProps .stroke-btn').forEach(b => b.classList.remove('active'));
+  const strokeMap = { 1.5: 'sel-sw-1', 3: 'sel-sw-2', 5: 'sel-sw-3' };
+  if (strokeMap[s.stroke]) document.getElementById(strokeMap[s.stroke]).classList.add('active');
+  // fill
+  syncSelFillBtn(!!s.fill);
+  // show panel
+  document.getElementById('selProps').style.display = 'flex';
+}
+function syncSelFillBtn(filled) {
+  const btn = document.getElementById('selFillToggle');
+  btn.classList.toggle('active', filled);
+  btn.innerHTML = filled
+    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 塗りあり`
+    : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> 枠のみ`;
+}
+function hideSelProps() {
+  document.getElementById('selProps').style.display = 'none';
 }
 
 // ── Shapes storage helpers ──
@@ -876,6 +1015,7 @@ document.addEventListener('keydown', e => {
   if (document.getElementById('panel-draw').classList.contains('active')) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoDraw(); }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redoDraw(); }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIdx >= 0 && currentTool === 'select') { e.preventDefault(); deleteSelected(); }
   }
 });
 
@@ -897,6 +1037,177 @@ function isNearStart(x, y) {
   return Math.sqrt(dx * dx + dy * dy) < SNAP_DIST;
 }
 
+// ── Selection state ──
+let selectedIdx = -1;    // index in pageShapes
+let selDragMode = null;  // 'move' | 'tl'|'tr'|'bl'|'br'
+let selDragStart = null; // {x,y}
+let selShapeSnap = null; // deep-copy of shape at drag start
+
+const selBox = document.getElementById('selBox');
+const selDel = document.getElementById('selDel');
+
+selDel.addEventListener('click', () => deleteSelected());
+selBox.addEventListener('mousedown', e => { e.stopPropagation(); startSelMove(e); });
+document.querySelectorAll('.sel-handle').forEach(h => {
+  h.addEventListener('mousedown', e => { e.stopPropagation(); startSelResize(e, h.dataset.dir); });
+});
+
+function deleteSelected() {
+  if (selectedIdx < 0) return;
+  const shapes = getShapes(drawCurrentPage);
+  saveUndo();
+  shapes.splice(selectedIdx, 1);
+  selectedIdx = -1;
+  hideSelBox();
+  redrawAllShapes();
+}
+
+function saveUndo() {
+  const shapes = getShapes(drawCurrentPage);
+  if (!undoStacks.has(drawCurrentPage)) undoStacks.set(drawCurrentPage, []);
+  undoStacks.get(drawCurrentPage).push(JSON.parse(JSON.stringify(shapes)));
+  redoStacks.set(drawCurrentPage, []);
+}
+
+// ── Bounding box helpers ──
+function shapeBBox(s) {
+  if (s.type === 'polygon') {
+    const xs = s.points.map(p => p.x), ys = s.points.map(p => p.y);
+    return { x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
+  }
+  return { x1: Math.min(s.x1, s.x2), y1: Math.min(s.y1, s.y2), x2: Math.max(s.x1, s.x2), y2: Math.max(s.y1, s.y2) };
+}
+
+function pointInShape(s, x, y) {
+  const b = shapeBBox(s);
+  const pad = Math.max(6, s.stroke * 2);
+  return x >= b.x1 - pad && x <= b.x2 + pad && y >= b.y1 - pad && y <= b.y2 + pad;
+}
+
+// ── Show / hide selection box ──
+function showSelBox(s) {
+  const b = shapeBBox(s);
+  const rect = drawCanvas.getBoundingClientRect();
+  const sx = rect.width / drawCanvas.width;
+  const sy = rect.height / drawCanvas.height;
+  const pad = 6;
+  const left = (b.x1 - pad) * sx;
+  const top  = (b.y1 - pad) * sy;
+  const w    = (b.x2 - b.x1 + pad * 2) * sx;
+  const h    = (b.y2 - b.y1 + pad * 2) * sy;
+  selBox.style.display = 'block';
+  selBox.style.left   = left + 'px';
+  selBox.style.top    = top  + 'px';
+  selBox.style.width  = w + 'px';
+  selBox.style.height = h + 'px';
+  // handles at corners
+  document.getElementById('sh-tl').style.cssText += `left:0;top:0;`;
+  document.getElementById('sh-tr').style.cssText += `left:100%;top:0;`;
+  document.getElementById('sh-bl').style.cssText += `left:0;top:100%;`;
+  document.getElementById('sh-br').style.cssText += `left:100%;top:100%;`;
+}
+
+function hideSelBox() {
+  selBox.style.display = 'none';
+  selectedIdx = -1;
+  hideSelProps();
+}
+
+// ── Select tool: hit test ──
+function trySelect(x, y) {
+  const shapes = getShapes(drawCurrentPage);
+  // test in reverse order (topmost first)
+  for (let i = shapes.length - 1; i >= 0; i--) {
+    if (pointInShape(shapes[i], x, y)) {
+      selectedIdx = i;
+      showSelBox(shapes[i]);
+      syncSelProps(shapes[i]);
+      return true;
+    }
+  }
+  hideSelBox();
+  return false;
+}
+
+// ── Move drag ──
+function startSelMove(e) {
+  if (selectedIdx < 0) return;
+  const pos = getCanvasPos(e);
+  selDragMode = 'move';
+  selDragStart = pos;
+  selShapeSnap = JSON.parse(JSON.stringify(getShapes(drawCurrentPage)[selectedIdx]));
+  window.addEventListener('mousemove', onSelDrag);
+  window.addEventListener('mouseup', onSelDragEnd);
+}
+
+// ── Resize drag ──
+function startSelResize(e, dir) {
+  if (selectedIdx < 0) return;
+  const pos = getCanvasPos(e);
+  selDragMode = dir;
+  selDragStart = pos;
+  selShapeSnap = JSON.parse(JSON.stringify(getShapes(drawCurrentPage)[selectedIdx]));
+  window.addEventListener('mousemove', onSelDrag);
+  window.addEventListener('mouseup', onSelDragEnd);
+}
+
+function onSelDrag(e) {
+  if (!selDragMode || selectedIdx < 0) return;
+  const pos = getCanvasPos(e);
+  const dx = pos.x - selDragStart.x;
+  const dy = pos.y - selDragStart.y;
+  const shapes = getShapes(drawCurrentPage);
+  const s = shapes[selectedIdx];
+  const snap = selShapeSnap;
+
+  if (selDragMode === 'move') {
+    if (snap.type === 'polygon') {
+      s.points = snap.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+    } else {
+      s.x1 = snap.x1 + dx; s.y1 = snap.y1 + dy;
+      s.x2 = snap.x2 + dx; s.y2 = snap.y2 + dy;
+    }
+  } else {
+    // Resize: move one corner, keep opposite fixed
+    if (snap.type === 'polygon') {
+      // scale polygon around its bbox
+      const b = shapeBBox(snap);
+      const bw = b.x2 - b.x1 || 1, bh = b.y2 - b.y1 || 1;
+      let nx1 = b.x1, ny1 = b.y1, nx2 = b.x2, ny2 = b.y2;
+      if (selDragMode === 'tl') { nx1 = snap.x1 !== undefined ? snap.x1 + dx : b.x1 + dx; ny1 = b.y1 + dy; }
+      else if (selDragMode === 'tr') { nx2 = b.x2 + dx; ny1 = b.y1 + dy; }
+      else if (selDragMode === 'bl') { nx1 = b.x1 + dx; ny2 = b.y2 + dy; }
+      else if (selDragMode === 'br') { nx2 = b.x2 + dx; ny2 = b.y2 + dy; }
+      const scx = (nx2 - nx1) / bw, scy = (ny2 - ny1) / bh;
+      s.points = snap.points.map(p => ({
+        x: nx1 + (p.x - b.x1) * scx,
+        y: ny1 + (p.y - b.y1) * scy
+      }));
+    } else {
+      if (selDragMode === 'tl')      { s.x1 = snap.x1 + dx; s.y1 = snap.y1 + dy; }
+      else if (selDragMode === 'tr') { s.x2 = snap.x2 + dx; s.y1 = snap.y1 + dy; }
+      else if (selDragMode === 'bl') { s.x1 = snap.x1 + dx; s.y2 = snap.y2 + dy; }
+      else if (selDragMode === 'br') { s.x2 = snap.x2 + dx; s.y2 = snap.y2 + dy; }
+    }
+  }
+  redrawAllShapes();
+  showSelBox(s);
+}
+
+function onSelDragEnd(e) {
+  if (selDragMode) {
+    saveUndo();
+    // put current state into undo properly
+    const shapes = getShapes(drawCurrentPage);
+    const stack = undoStacks.get(drawCurrentPage);
+    // already saved above – just clean up
+  }
+  selDragMode = null; selDragStart = null; selShapeSnap = null;
+  window.removeEventListener('mousemove', onSelDrag);
+  window.removeEventListener('mouseup', onSelDragEnd);
+}
+
+// ── Canvas pointer events ──
 drawCanvas.addEventListener('mousedown', onDrawStart);
 drawCanvas.addEventListener('mousemove', onDrawMove);
 drawCanvas.addEventListener('mouseup', onDrawEnd);
@@ -907,9 +1218,13 @@ drawCanvas.addEventListener('touchend', e => { e.preventDefault(); onDrawEnd(e);
 function onDrawStart(e) {
   const { x, y } = getCanvasPos(e);
 
+  if (currentTool === 'select') {
+    trySelect(x, y);
+    return;
+  }
+
   if (currentTool === 'polygon') {
     if (polygonPoints.length > 0 && isNearStart(x, y)) {
-      // close polygon
       finishPolygon();
     } else {
       polygonPoints.push({ x, y });
@@ -925,6 +1240,14 @@ function onDrawStart(e) {
 
 function onDrawMove(e) {
   const { x, y } = getCanvasPos(e);
+
+  if (currentTool === 'select') {
+    // change cursor when hovering over a shape
+    const shapes = getShapes(drawCurrentPage);
+    const hit = shapes.some(s => pointInShape(s, x, y));
+    drawCanvas.style.cursor = hit ? 'move' : 'default';
+    return;
+  }
 
   if (currentTool === 'polygon') {
     // show snap indicator
@@ -979,7 +1302,23 @@ function finishPolygon() {
 function redrawAllShapes() {
   ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   const shapes = getShapes(drawCurrentPage);
-  shapes.forEach(s => drawShape(ctx, s));
+  shapes.forEach((s, i) => {
+    drawShape(ctx, s);
+    if (i === selectedIdx && currentTool === 'select') {
+      // highlight selected shape
+      ctx.save();
+      const b = shapeBBox(s);
+      ctx.strokeStyle = 'rgba(224,90,122,0.5)';
+      ctx.lineWidth = s.stroke + 4;
+      ctx.setLineDash([]);
+      drawShape(ctx, s);
+      ctx.restore();
+    }
+  });
+  // refresh sel box
+  if (selectedIdx >= 0 && selectedIdx < shapes.length && currentTool === 'select') {
+    showSelBox(shapes[selectedIdx]);
+  }
 }
 
 function drawPreview(x1, y1, x2, y2) {
