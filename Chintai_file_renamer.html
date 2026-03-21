@@ -214,8 +214,11 @@
 
       <!-- クイックワードバー -->
       <div class="qword-bar" id="qwordBar">
-        <div class="qword-bar-label">📋 よく使うファイル名（クリックでコピー）</div>
-        <div class="qword-chips">
+        <div class="qword-bar-label" onclick="toggleQword()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;">
+          <span>📋 よく使うファイル名</span>
+          <span id="qwordArrow" style="font-size:11px;color:var(--accent2);transition:transform .25s;display:inline-block;">▼ 開く</span>
+        </div>
+        <div class="qword-chips" id="qwordChips" style="display:none;margin-top:9px;">
           <span class="qword-chip" onclick="copyWord('入居計算書')">入居計算書</span>
           <span class="qword-chip" onclick="copyWord('賃貸住宅紛争防止条例に基づく説明書')">賃貸住宅紛争防止条例に基づく説明書</span>
           <span class="qword-chip" onclick="copyWord('取引台帳')">取引台帳</span>
@@ -1050,6 +1053,15 @@ function onApiKeyInput(val){
 // クイックワード コピー
 // ============================================================
 let copyTimer = null;
+
+function toggleQword(){
+  const chips = document.getElementById('qwordChips');
+  const arrow = document.getElementById('qwordArrow');
+  if(!chips) return;
+  const isOpen = chips.style.display !== 'none';
+  chips.style.display = isOpen ? 'none' : 'flex';
+  if(arrow) arrow.textContent = isOpen ? '▼ 開く' : '▲ 閉じる';
+}
 function copyWord(word) {
   navigator.clipboard.writeText(word).then(() => {
     const msg = document.getElementById('qwordCopied');
