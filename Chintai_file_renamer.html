@@ -163,6 +163,20 @@
     opacity: 0;
     transition: opacity .3s;
   }
+
+  /* ===== APIキーセクション ===== */
+  .api-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:14px;box-shadow:0 2px 8px var(--shadow);}
+  .api-row{display:flex;align-items:center;gap:8px;}
+  .api-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--text2);white-space:nowrap;flex-shrink:0;}
+  .api-input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:11px;font-family:'DM Mono',monospace;color:var(--text);outline:none;transition:border-color .2s;min-width:0;}
+  .api-input:focus{border-color:var(--accent);}
+  .api-input::placeholder{color:var(--text3);}
+  .api-badge{font-size:10px;font-family:'DM Mono',monospace;padding:3px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;transition:all .2s;}
+  .api-badge.ok{background:rgba(43,170,114,.12);color:var(--success);border:1px solid rgba(43,170,114,.25);}
+  .api-badge.ng{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+  .api-hint{font-size:10px;color:var(--text3);margin-top:5px;font-family:'DM Mono',monospace;}
+  .api-hint a{color:var(--accent2);text-decoration:none;}
+  .api-hint a:hover{text-decoration:underline;}
   ::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
   ::-webkit-scrollbar-thumb:hover{background:var(--accent2);}
 </style>
@@ -184,6 +198,22 @@
         </div>
       </header>
 
+
+
+      <!-- APIキー入力 -->
+      <div class="api-section">
+        <div class="api-row">
+          <span class="api-label">🔑 API KEY</span>
+          <input class="api-input" id="apiKeyInput" type="password"
+            placeholder="sk-ant-api03-..." autocomplete="off"
+            oninput="onApiKeyInput(this.value)">
+          <span class="api-badge ng" id="apiBadge">未入力</span>
+        </div>
+        <div class="api-hint">
+          Anthropic APIキーを入力してください（入力内容はブラウザに保存されます）。
+          キーは <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> で取得できます。
+        </div>
+      </div>
 
       <!-- クイックワードバー -->
       <div class="qword-bar" id="qwordBar">
@@ -800,8 +830,10 @@ async function callClaude(it, extractedText){
     blocks=[{type:'text',text:body}];
   }
 
+  const apiKey = getApiKey();
+  if(!apiKey){throw new Error('APIキーが入力されていません。画面上部のAPI KEY欄に入力してください。');}
   const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',headers:{'Content-Type':'application/json'},
+    method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:blocks}]})
   });
   if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'APIエラー');}
@@ -932,6 +964,35 @@ async function downloadChecked(){
   btn.textContent = '⬇ チェックしたファイルをダウンロード';
   log('完了: ' + targets.length + '件', 'success');
 }
+
+
+// ============================================================
+// APIキー管理
+// ============================================================
+function getApiKey(){
+  return document.getElementById('apiKeyInput')?.value.trim() || '';
+}
+function onApiKeyInput(val){
+  const ok = val.trim().startsWith('sk-ant');
+  const badge = document.getElementById('apiBadge');
+  if(badge){
+    badge.textContent = ok ? '✓ 有効' : (val.trim() ? '無効' : '未入力');
+    badge.className = 'api-badge ' + (ok ? 'ok' : 'ng');
+  }
+  if(ok){
+    try{ localStorage.setItem('chintai_renamer_api_key', val.trim()); }catch(e){}
+  }
+}
+// ページ読み込み時にlocalStorageから復元
+(function(){
+  try{
+    const saved = localStorage.getItem('chintai_renamer_api_key') || '';
+    if(saved){
+      const inp = document.getElementById('apiKeyInput');
+      if(inp){ inp.value = saved; onApiKeyInput(saved); }
+    }
+  }catch(e){}
+})();
 
 // ============================================================
 // パネルリサイザー（左右ドラッグ）
