@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>経費精算アプリ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f5f0; min-height: 100vh; color: #1a1a1a; }
+  
+  .header { background: #1a1a2e; color: #fff; padding: 20px 32px; display: flex; align-items: center; gap: 16px; }
+  .header h1 { font-size: 20px; font-weight: 500; letter-spacing: 0.05em; }
+  .header .subtitle { font-size: 13px; color: #8899aa; margin-top: 2px; }
+  .logo { width: 36px; height: 36px; background: #3a86ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  
+  .main { display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 76px); }
+  
+  .sidebar { background: #fff; border-right: 1px solid #e8e8e4; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+  
+  .upload-zone { border: 2px dashed #c8c8c0; border-radius: 12px; padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: #fafaf8; }
+  .upload-zone:hover, .upload-zone.dragover { border-color: #3a86ff; background: #f0f5ff; }
+  .upload-zone .icon { font-size: 36px; margin-bottom: 12px; }
+  .upload-zone p { font-size: 14px; color: #666; line-height: 1.6; }
+  .upload-zone p strong { color: #1a1a1a; font-weight: 500; }
+  .upload-zone input { display: none; }
+  
+  .btn-primary { background: #3a86ff; color: #fff; border: none; border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; transition: background 0.2s; font-family: inherit; letter-spacing: 0.03em; }
+  .btn-primary:hover { background: #2870e8; }
+  .btn-primary:disabled { background: #aac4f0; cursor: not-allowed; }
+  
+  .btn-secondary { background: #fff; color: #1a1a1a; border: 1px solid #d0d0c8; border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; transition: all 0.2s; font-family: inherit; }
+  .btn-secondary:hover { background: #f5f5f0; border-color: #b0b0a8; }
+  
+  .queue-section h3 { font-size: 13px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .queue-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+  .queue-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fafaf8; border-radius: 8px; border: 1px solid #e8e8e4; font-size: 13px; }
+  .queue-item .thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: #e8e8e4; }
+  .queue-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #333; }
+  .queue-item .status { flex-shrink: 0; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .status-pending { background: #fff3cd; color: #856404; }
+  .status-processing { background: #cfe2ff; color: #084298; }
+  .status-done { background: #d1e7dd; color: #0a3622; }
+  .status-error { background: #f8d7da; color: #842029; }
+  .queue-item .remove-btn { background: none; border: none; cursor: pointer; color: #999; font-size: 16px; padding: 0 2px; flex-shrink: 0; }
+  .queue-item .remove-btn:hover { color: #e74c3c; }
+  
+  .content { padding: 24px; overflow: auto; }
+  
+  .content-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .content-header h2 { font-size: 18px; font-weight: 500; }
+  .actions { display: flex; gap: 10px; }
+  .btn-export { background: #16a34a; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+  .btn-export:hover { background: #15803d; }
+  .btn-export:disabled { background: #9dc9b4; cursor: not-allowed; }
+  .btn-clear { background: #fff; color: #dc2626; border: 1px solid #fca5a5; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+  .btn-clear:hover { background: #fef2f2; }
+  
+  .table-wrap { background: #fff; border-radius: 12px; border: 1px solid #e8e8e4; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f5f5f0; padding: 12px 14px; text-align: left; font-weight: 500; font-size: 12px; color: #666; border-bottom: 1px solid #e8e8e4; white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f0f0ec; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafaf8; }
+  
+  td input, td select { font-size: 13px; font-family: inherit; border: 1px solid transparent; background: transparent; padding: 4px 6px; border-radius: 4px; width: 100%; transition: all 0.15s; color: #1a1a1a; }
+  td input:hover, td select:hover { border-color: #d0d0c8; background: #fafaf8; }
+  td input:focus, td select:focus { border-color: #3a86ff; background: #fff; outline: none; box-shadow: 0 0 0 2px rgba(58,134,255,0.15); }
+  
+  .col-date { min-width: 90px; }
+  .col-account { min-width: 120px; }
+  .col-purpose { min-width: 110px; }
+  .col-month { min-width: 60px; }
+  .col-payee { min-width: 160px; }
+  .col-payment { min-width: 75px; }
+  .col-tax { width: 55px; text-align: center; }
+  .col-invoice { width: 60px; text-align: center; }
+  .col-ledger { width: 70px; text-align: center; }
+  .col-amount { min-width: 90px; text-align: right; }
+  .col-action { width: 40px; text-align: center; }
+  
+  td.amount-cell { text-align: right; }
+  td.amount-cell input { text-align: right; }
+  
+  .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+  .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 15px; line-height: 1.7; }
+  
+  .processing-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 1000; align-items: center; justify-content: center; }
+  .processing-overlay.show { display: flex; }
+  .processing-card { background: #fff; border-radius: 16px; padding: 32px 40px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .spinner { width: 40px; height: 40px; border: 3px solid #e8e8e4; border-top-color: #3a86ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .processing-card p { color: #666; font-size: 14px; margin-top: 8px; }
+  .processing-card strong { font-size: 16px; color: #1a1a1a; }
+  
+  .row-delete-btn { background: none; border: none; cursor: pointer; color: #ccc; font-size: 16px; padding: 4px; border-radius: 4px; transition: color 0.15s; }
+  .row-delete-btn:hover { color: #e74c3c; background: #fef2f2; }
+  
+  .image-cell img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+  
+  .total-row { background: #f5f5f0; font-weight: 500; }
+  .total-row td { border-top: 2px solid #e8e8e4; }
+  
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a2e; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; z-index: 2000; transform: translateY(80px); opacity: 0; transition: all 0.3s; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: #16a34a; }
+  .toast.error { background: #dc2626; }
+  
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; }
+  .lightbox.show { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+  .lightbox-close { position: absolute; top: 20px; right: 20px; background: #fff; border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+  
+  .progress-bar { height: 3px; background: #e8e8e4; border-radius: 2px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; background: #3a86ff; border-radius: 2px; transition: width 0.3s; width: 0%; }
+  
+  .api-notice { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #92400e; }
+
+  /* Debug */
+  .debug-toggle { position: fixed; bottom: 24px; left: 24px; background: #1a1a2e; color: #7faaff; border: 1px solid #3a86ff; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-family: 'Courier New', monospace; cursor: pointer; z-index: 1500; letter-spacing: 0.05em; transition: all 0.2s; }
+  .debug-toggle:hover { background: #252545; }
+  .debug-toggle.active { background: #3a86ff; color: #fff; }
+
+  .debug-panel { display: none; position: fixed; bottom: 70px; left: 24px; width: 560px; max-height: 72vh; background: #0d1117; border: 1px solid #30363d; border-radius: 12px; z-index: 1499; flex-direction: column; font-family: 'Courier New', monospace; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  .debug-panel.show { display: flex; }
+
+  .debug-tabs { display: flex; border-bottom: 1px solid #30363d; flex-shrink: 0; }
+  .debug-tab { padding: 10px 16px; font-size: 11px; color: #8b949e; cursor: pointer; border-right: 1px solid #30363d; transition: all 0.15s; white-space: nowrap; font-family: 'Courier New', monospace; background: none; border-top: none; border-left: none; border-bottom: 2px solid transparent; }
+  .debug-tab:hover { color: #c9d1d9; background: #161b22; }
+  .debug-tab.active { color: #58a6ff; border-bottom: 2px solid #58a6ff; background: #161b22; }
+  .debug-tab-badge { display: inline-block; background: #dc2626; color: #fff; font-size: 10px; border-radius: 10px; padding: 1px 5px; margin-left: 4px; }
+
+  .debug-body { flex: 1; overflow-y: auto; padding: 12px; }
+  .debug-section { display: none; }
+  .debug-section.active { display: block; }
+
+  .debug-toolbar { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .debug-btn { background: #21262d; color: #8b949e; border: 1px solid #30363d; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: 'Courier New', monospace; transition: all 0.15s; }
+  .debug-btn:hover { background: #30363d; color: #c9d1d9; }
+  .debug-btn.danger { border-color: #6e2020; color: #f85149; }
+  .debug-btn.danger:hover { background: #2d1b1b; }
+
+  .log-entry { padding: 5px 0; border-bottom: 1px solid #161b22; font-size: 11px; line-height: 1.6; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-time { color: #484f58; margin-right: 8px; }
+  .log-level-info { color: #58a6ff; }
+  .log-level-success { color: #3fb950; }
+  .log-level-warn { color: #d29922; }
+  .log-level-error { color: #f85149; }
+  .log-msg { color: #c9d1d9; }
+  .log-detail { color: #8b949e; margin-top: 3px; font-size: 10px; white-space: pre-wrap; word-break: break-all; }
+
+  .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .preview-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+  .preview-card:hover { border-color: #58a6ff; }
+  .preview-card img { width: 100%; height: 80px; object-fit: cover; display: block; }
+  .preview-card .preview-name { padding: 5px 7px; font-size: 10px; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .preview-card .preview-status { padding: 0 7px 5px; font-size: 10px; }
+  .preview-card.pdf-card { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px; }
+  .preview-card.pdf-card .pdf-icon { font-size: 28px; margin-bottom: 4px; }
+
+  .data-table-debug { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .data-table-debug th { background: #161b22; color: #8b949e; padding: 5px 8px; text-align: left; border-bottom: 1px solid #30363d; white-space: nowrap; }
+  .data-table-debug td { color: #c9d1d9; padding: 4px 8px; border-bottom: 1px solid #161b22; vertical-align: top; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .data-table-debug tr:hover td { background: #161b22; }
+  .val-null { color: #484f58; font-style: italic; }
+  .val-ok { color: #3fb950; }
+
+  .raw-json { font-size: 10px; color: #c9d1d9; white-space: pre-wrap; word-break: break-all; background: #161b22; border-radius: 6px; padding: 10px; border: 1px solid #30363d; max-height: 200px; overflow-y: auto; }
+  .error-card { background: #1a0a0a; border: 1px solid #6e2020; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .error-card .err-title { color: #f85149; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+  .error-card .err-body { color: #8b949e; font-size: 10px; white-space: pre-wrap; word-break: break-all; }
+
+  .empty-debug { color: #484f58; font-size: 12px; text-align: center; padding: 32px 0; }
+
+  tr.drag-over td { background: #e8f0fe !important; }
+  tr.drag-over { outline: 2px dashed #3a86ff; }
+  th[onclick]:hover { background: #ebebE6; color: #3a86ff; }
+  th[onclick] { user-select: none; transition: color 0.15s, background 0.15s; }
+
+  /* 左サイド画像パネル */
+  .img-panel { position: fixed; top: 76px; left: 360px; width: 0; height: calc(100vh - 76px); background: #1a1a2e; z-index: 500; transition: width 0.25s cubic-bezier(.4,0,.2,1); overflow: hidden; display: flex; flex-direction: column; box-shadow: 4px 0 16px rgba(0,0,0,0.18); min-width: 0; }
+  .img-panel.open { width: 320px; }
+  .img-panel.resizing { transition: none; }
+  .img-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .img-panel-title { color: #8899aa; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+  .img-panel-close { background: none; border: none; color: #8899aa; font-size: 18px; cursor: pointer; padding: 0 4px; flex-shrink: 0; }
+  .img-panel-close:hover { color: #fff; }
+  .img-panel-body { flex: 1; overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
+  .img-panel-body img { max-width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+
+  /* リサイズハンドル */
+  .img-panel-resize { position: absolute; top: 0; right: 0; width: 6px; height: 100%; cursor: ew-resize; z-index: 10; background: transparent; transition: background 0.15s; }
+  .img-panel-resize:hover, .img-panel-resize.dragging { background: rgba(58,134,255,0.5); }
+  .img-panel-resize::after { content: ''; position: absolute; top: 50%; right: 1px; transform: translateY(-50%); width: 3px; height: 40px; border-radius: 2px; background: rgba(255,255,255,0.15); }
+
+  /* サムネイル */
+  .row-thumb { width: 28px; height: 28px; border-radius: 4px; object-fit: cover; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s, transform 0.15s; vertical-align: middle; }
+  .row-thumb:hover { border-color: #3a86ff; transform: scale(1.1); }
+  .row-thumb.active { border-color: #3a86ff; box-shadow: 0 0 0 2px rgba(58,134,255,0.3); }
+  .row-thumb-empty { width: 28px; height: 28px; border-radius: 4px; background: #f0f0ec; border: 1px dashed #d0d0c8; display: inline-flex; align-items: center; justify-content: center; color: #ccc; font-size: 14px; vertical-align: middle; }
+
+  /* パネルが開いたとき content をずらす */
+  .content { transition: margin-left 0.25s cubic-bezier(.4,0,.2,1); }
+  .content.resizing { transition: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">経</div>
+  <div>
+    <h1>経費精算アプリ — Crevias Inc.</h1>
+    <div class="subtitle">領収書画像をアップロードして経費データを自動入力</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div>
+      <div class="upload-zone" id="uploadZone">
+        <div class="icon">📎</div>
+        <p><strong>領収書・レシートをアップロード</strong></p>
+        <p style="margin-top:6px;">クリックまたはドラッグ＆ドロップ<br>複数ファイル対応（JPG / PNG / PDF）</p>
+        <input type="file" id="fileInput" accept="image/*,.pdf" multiple>
+      </div>
+      <div class="progress-bar" id="progressBar" style="display:none;">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+    
+    <div class="api-notice">
+      ⚙️ このアプリはClaude APIを使用して領収書を自動解析します。
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <label style="font-size:12px; font-weight:500; color:#555;">Anthropic API キー</label>
+      <div style="display:flex; gap:6px;">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." 
+          style="flex:1; font-size:12px; font-family:'Courier New',monospace; padding:8px 10px; border:1px solid #d0d0c8; border-radius:6px; background:#fafaf8; color:#1a1a1a; outline:none;"
+          oninput="saveApiKey(this.value)"
+          onfocus="this.style.borderColor='#3a86ff'"
+          onblur="this.style.borderColor='#d0d0c8'">
+        <button onclick="toggleApiKeyVisibility()" id="apiKeyToggle"
+          style="background:#fff; border:1px solid #d0d0c8; border-radius:6px; padding:0 10px; cursor:pointer; font-size:14px; color:#666;" title="表示/非表示">👁</button>
+      </div>
+      <div id="apiKeyStatus" style="font-size:11px; color:#999; min-height:16px;"></div>
+    </div>
+    
+    <button class="btn-primary" id="processBtn" disabled>
+      🔍 選択中の領収書を解析する
+    </button>
+    
+    <div class="queue-section">
+      <h3>アップロードキュー</h3>
+      <div class="queue-list" id="queueList">
+        <div style="color:#bbb; font-size:13px; text-align:center; padding:20px 0;">ファイルなし</div>
+      </div>
+    </div>
+    
+    <button class="btn-secondary" id="addRowBtn">＋ 行を手動追加</button>
+  </div>
+  
+  <div class="content">
+    <div class="content-header">
+      <h2>経費明細一覧</h2>
+      <div class="actions">
+        <button class="btn-clear" id="clearBtn">すべてクリア</button>
+        <button class="btn-export" id="exportBtn" disabled>
+          📋 Excelに貼り付け用コピー
+        </button>
+      </div>
+    </div>
+    <div id="exportHint" style="display:none; margin-bottom:12px; background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:10px 14px; font-size:12px; color:#166534; line-height:1.8;">
+      ① このボタンを押す &nbsp;→&nbsp; ② Excelの <strong>A12セル</strong> をクリック &nbsp;→&nbsp; <strong>Ctrl+V</strong>（Mac: ⌘+V）で貼り付け
+    </div>
+    
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <button id="colSettingsBtn" onclick="toggleColSettings()" style="background:#fff; border:1px solid #d0d0c8; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; color:#555; font-family:inherit; display:flex; align-items:center; gap:5px;">
+        ⚙ 列の表示設定
+      </button>
+      <span style="font-size:11px; color:#aaa;">列ヘッダーをクリックでソート　行はドラッグで並び替え</span>
+    </div>
+
+    <!-- 列表示設定パネル -->
+    <div id="colSettingsPanel" style="display:none; background:#fff; border:1px solid #e8e8e4; border-radius:8px; padding:12px 16px; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+      <span style="font-size:11px; color:#888; width:100%; display:block; margin-bottom:6px;">チェックを外した列は非表示になります（コピー時も除外されます）</span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="expenseTable">
+        <thead>
+          <tr id="theadRow">
+            <th style="width:40px;"></th>
+            <th style="width:36px;"></th>
+            <th class="col-date" data-col="date" onclick="sortBy('date')" style="cursor:pointer;" title="クリックでソート">A：支払日</th>
+            <th class="col-account" data-col="account" onclick="sortBy('account')" style="cursor:pointer;" title="クリックでソート">B：勘定科目</th>
+            <th class="col-purpose" data-col="purpose" onclick="sortBy('purpose')" style="cursor:pointer;" title="クリックでソート">C：内容・目的</th>
+            <th class="col-month" data-col="month" onclick="sortBy('month')" style="cursor:pointer;" title="クリックでソート">D：取引月</th>
+            <th class="col-payee" data-col="payee" onclick="sortBy('payee')" style="cursor:pointer;" title="クリックでソート">E：支払先</th>
+            <th class="col-payment" data-col="payment" onclick="sortBy('payment')" style="cursor:pointer;" title="クリックでソート">F：支払手段</th>
+            <th class="col-tax" data-col="tax">G：軽減税率</th>
+            <th class="col-invoice" data-col="invoice">H：インボイス</th>
+            <th class="col-ledger" data-col="ledger">I：帳簿のみ</th>
+            <th class="col-amount" data-col="amount" onclick="sortBy('amount')" style="cursor:pointer;" title="クリックでソート">J：金額</th>
+            <th style="width:40px;"></th>
+          </tr>
+        </thead>
+        <tbody id="expenseBody">
+          <tr id="emptyRow">
+            <td colspan="12">
+              <div class="empty-state">
+                <div class="big-icon">🧾</div>
+                <p>領収書をアップロードして「解析する」ボタンを押すと<br>自動的にデータが入力されます</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot id="expenseFoot" style="display:none;">
+          <tr class="total-row">
+            <td colspan="10" style="text-align:right; font-size:13px; color:#666;">合　計</td>
+            <td class="amount-cell" id="totalCell" style="font-size:14px;"></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 左サイド画像パネル -->
+<div class="img-panel" id="imgPanel">
+  <div class="img-panel-resize" id="imgPanelResize" title="ドラッグしてサイズ変更"></div>
+  <div class="img-panel-header">
+    <span class="img-panel-title" id="imgPanelTitle">領収書</span>
+    <button class="img-panel-close" onclick="closeImgPanel()">✕</button>
+  </div>
+  <div class="img-panel-body">
+    <img id="imgPanelImg" src="" alt="領収書">
+  </div>
+</div>
+
+<div class="processing-overlay" id="processingOverlay">
+  <div class="processing-card">
+    <div class="spinner"></div>
+    <strong id="processingTitle">解析中...</strong>
+    <p id="processingMsg">Claude AIが領収書を読み取っています</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Debug Toggle Button -->
+<button class="debug-toggle" id="debugToggle" onclick="toggleDebug()">⬛ DEBUG</button>
+
+<!-- Debug Panel -->
+<div class="debug-panel" id="debugPanel">
+  <div class="debug-tabs">
+    <button class="debug-tab active" onclick="switchDebugTab('log',this)">📋 ログ <span class="debug-tab-badge" id="logBadge" style="display:none">0</span></button>
+    <button class="debug-tab" onclick="switchDebugTab('preview',this)">🖼 送信プレビュー</button>
+    <button class="debug-tab" onclick="switchDebugTab('data',this)">📊 データ確認</button>
+    <button class="debug-tab" onclick="switchDebugTab('errors',this)">🚨 エラー <span class="debug-tab-badge" id="errorBadge" style="display:none">0</span></button>
+  </div>
+  <div class="debug-body">
+
+    <!-- Tab: Log -->
+    <div class="debug-section active" id="tab-log">
+      <div class="debug-toolbar">
+        <span style="color:#8b949e;font-size:11px;">APIログ・処理ログ</span>
+        <button class="debug-btn danger" onclick="clearLog()">ログをクリア</button>
+        <button class="debug-btn" onclick="copyLog()">コピー</button>
+      </div>
+      <div id="logContainer"><div class="empty-debug">ログなし — 解析を実行するとここに記録されます</div></div>
+    </div>
+
+    <!-- Tab: Preview -->
+    <div class="debug-section" id="tab-preview">
+      <div class="debug-toolbar">
+        <span style="color:#8b949e;font-size:11px;">APIに送信する前に画像を確認</span>
+      </div>
+      <div id="previewContainer"><div class="empty-debug">ファイルを選択するとプレビューが表示されます</div></div>
+    </div>
+
+    <!-- Tab: Data -->
+    <div class="debug-section" id="tab-data">
+      <div class="debug-toolbar">
+        <span style="color:#8b949e;font-size:11px;">Excel出力前のデータ状態</span>
+        <button class="debug-btn" onclick="refreshDataView()">更新</button>
+        <button class="debug-btn" onclick="copyDataJson()">JSONコピー</button>
+      </div>
+      <div id="dataContainer"><div class="empty-debug">データなし</div></div>
+    </div>
+
+    <!-- Tab: Errors -->
+    <div class="debug-section" id="tab-errors">
+      <div class="debug-toolbar">
+        <span style="color:#8b949e;font-size:11px;">解析失敗・例外の詳細</span>
+        <button class="debug-btn danger" onclick="clearErrors()">クリア</button>
+      </div>
+      <div id="errorContainer"><div class="empty-debug">エラーなし</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ACCOUNTS = ['接待交際費','会議費','支払手数料','車両費','新聞図書費','前渡金','租税公課','通信費','福利厚生費','旅費交通費','研修教育費','水道光熱費','預り金','仮払金','立替金','消耗品','保険料','広告費','管理経費','登記費用','買取再販原価','出資金','賃貸収入原価'];
+
+/* ===== DEBUG ENGINE ===== */
+let debugLogs = [];
+let debugErrors = [];
+let logCount = 0;
+
+function dbg(level, msg, detail = null) {
+  const now = new Date();
+  const time = now.toTimeString().slice(0,8) + '.' + String(now.getMilliseconds()).padStart(3,'0');
+  const entry = { time, level, msg, detail };
+  debugLogs.push(entry);
+  logCount++;
+  _renderLog();
+  _updateBadge('logBadge', logCount);
+}
+
+function dbgError(title, err, context = null) {
+  const entry = { title, message: err?.message || String(err), stack: err?.stack || '', context, time: new Date().toTimeString().slice(0,8) };
+  debugErrors.push(entry);
+  _renderErrors();
+  _updateBadge('errorBadge', debugErrors.length);
+  dbg('error', title, err?.message || String(err));
+}
+
+function _renderLog() {
+  const c = document.getElementById('logContainer');
+  if (!c) return;
+  if (debugLogs.length === 0) { c.innerHTML = '<div class="empty-debug">ログなし</div>'; return; }
+  c.innerHTML = [...debugLogs].reverse().map(e => `
+    <div class="log-entry">
+      <span class="log-time">${e.time}</span><span class="log-level-${e.level}">[${e.level.toUpperCase()}]</span>
+      <span class="log-msg"> ${escHtmlDebug(String(e.msg))}</span>
+      ${e.detail ? `<div class="log-detail">${escHtmlDebug(String(e.detail))}</div>` : ''}
+    </div>`).join('');
+}
+
+function _renderErrors() {
+  const c = document.getElementById('errorContainer');
+  if (!c) return;
+  if (debugErrors.length === 0) { c.innerHTML = '<div class="empty-debug">エラーなし</div>'; return; }
+  c.innerHTML = [...debugErrors].reverse().map(e => `
+    <div class="error-card">
+      <div class="err-title">${escHtmlDebug(e.title)} <span style="color:#484f58;font-size:10px;">${e.time}</span></div>
+      <div class="err-body">${escHtmlDebug(e.message)}${e.context ? '\n\nContext: ' + escHtmlDebug(JSON.stringify(e.context, null, 2)) : ''}${e.stack ? '\n\nStack:\n' + escHtmlDebug(e.stack.split('\n').slice(0,4).join('\n')) : ''}</div>
+    </div>`).join('');
+}
+
+function refreshDataView() {
+  const c = document.getElementById('dataContainer');
+  if (!c) return;
+  if (rows.length === 0) { c.innerHTML = '<div class="empty-debug">データなし</div>'; return; }
+  const headers = ['#','支払日','勘定科目','内容・目的','取引月','支払先','支払手段','G','H','I','金額'];
+  const fields = ['payment_date_jp','account','purpose','transaction_month','payee','payment_method','light_tax','invoice','ledger_only','amount'];
+  const tableRows = rows.map((r, i) => {
+    const cells = fields.map(f => {
+      const v = r[f] || (f==='payment_date_jp' ? formatDateJP(r.payment_date) : '');
+      return `<td class="${v ? 'val-ok' : 'val-null'}">${v ? escHtmlDebug(String(v)) : '—'}</td>`;
+    }).join('');
+    return `<tr><td style="color:#484f58">${i+1}</td>${cells}</tr>`;
+  }).join('');
+  c.innerHTML = `
+    <div style="overflow-x:auto;">
+      <table class="data-table-debug">
+        <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;">
+      <details>
+        <summary style="color:#8b949e;font-size:11px;cursor:pointer;margin-bottom:6px;">生JSONを表示</summary>
+        <div class="raw-json">${escHtmlDebug(JSON.stringify(rows.map(r=>({...r, imageUrl: r.imageUrl?'[blob]':null})), null, 2))}</div>
+      </details>
+    </div>`;
+}
+
+function renderPreviewDebug() {
+  const c = document.getElementById('previewContainer');
+  if (!c) return;
+  if (fileQueue.length === 0) { c.innerHTML = '<div class="empty-debug">ファイルを選択するとプレビューが表示されます</div>'; return; }
+  c.innerHTML = `<div class="preview-grid">${fileQueue.map(f => {
+    const statusColor = {pending:'#d29922',processing:'#58a6ff',done:'#3fb950',error:'#f85149'}[f.status]||'#8b949e';
+    if (f.file.type.startsWith('image/')) {
+      return `<div class="preview-card" onclick="openLightbox('${f.url}')">
+        <img src="${f.url}" alt="">
+        <div class="preview-name" title="${escHtmlDebug(f.file.name)}">${escHtmlDebug(f.file.name)}</div>
+        <div class="preview-status" style="color:${statusColor}">${f.status} · ${(f.file.size/1024).toFixed(0)}KB</div>
+      </div>`;
+    } else {
+      return `<div class="preview-card pdf-card">
+        <div class="pdf-icon">📄</div>
+        <div class="preview-name" title="${escHtmlDebug(f.file.name)}">${escHtmlDebug(f.file.name)}</div>
+        <div class="preview-status" style="color:${statusColor}">${f.status} · PDF</div>
+      </div>`;
+    }
+  }).join('')}</div>`;
+}
+
+function _updateBadge(id, count) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  if (count > 0) { b.style.display = 'inline-block'; b.textContent = count; }
+  else { b.style.display = 'none'; }
+}
+
+function toggleDebug() {
+  const panel = document.getElementById('debugPanel');
+  const btn = document.getElementById('debugToggle');
+  const showing = panel.classList.toggle('show');
+  btn.classList.toggle('active', showing);
+  btn.textContent = showing ? '◼ DEBUG' : '⬛ DEBUG';
+  if (showing) { refreshDataView(); renderPreviewDebug(); }
+}
+
+function switchDebugTab(name, el) {
+  document.querySelectorAll('.debug-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.debug-section').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'data') refreshDataView();
+  if (name === 'preview') renderPreviewDebug();
+}
+
+function clearLog() { debugLogs = []; logCount = 0; _renderLog(); _updateBadge('logBadge', 0); }
+function clearErrors() { debugErrors = []; _renderErrors(); _updateBadge('errorBadge', 0); }
+function copyLog() {
+  const text = debugLogs.map(e => `[${e.time}][${e.level}] ${e.msg}${e.detail ? '\n  ' + e.detail : ''}`).join('\n');
+  navigator.clipboard.writeText(text).then(() => showToast('ログをコピーしました', 'success')).catch(()=>{});
+}
+function copyDataJson() {
+  const text = JSON.stringify(rows.map(r=>({...r, imageUrl: r.imageUrl?'[blob]':null})), null, 2);
+  navigator.clipboard.writeText(text).then(() => showToast('JSONをコピーしました', 'success')).catch(()=>{});
+}
+
+function escHtmlDebug(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* ===== END DEBUG ENGINE ===== */
+
+/* ===== API KEY MANAGEMENT ===== */
+let _apiKey = '';
+
+function saveApiKey(val) {
+  _apiKey = val.trim();
+  const status = document.getElementById('apiKeyStatus');
+  if (!_apiKey) {
+    status.textContent = '';
+    status.style.color = '#999';
+  } else if (!_apiKey.startsWith('sk-ant-')) {
+    status.textContent = '⚠ 形式が正しくない可能性があります（sk-ant-... の形式）';
+    status.style.color = '#d97706';
+  } else {
+    status.textContent = '✓ キーが設定されました';
+    status.style.color = '#16a34a';
+  }
+  try { sessionStorage.setItem('anthropic_api_key', _apiKey); } catch(e) {}
+  dbg('info', 'APIキー更新', _apiKey ? `先頭: ${_apiKey.slice(0,12)}...` : '（空）');
+}
+
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('apiKeyInput');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+function getApiKey() {
+  if (_apiKey) return _apiKey;
+  try { return sessionStorage.getItem('anthropic_api_key') || ''; } catch(e) { return ''; }
+}
+
+// Restore key from sessionStorage on load
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const saved = sessionStorage.getItem('anthropic_api_key');
+    if (saved) {
+      document.getElementById('apiKeyInput').value = saved;
+      saveApiKey(saved);
+    }
+  } catch(e) {}
+});
+/* ===== END API KEY MANAGEMENT ===== */
+let fileQueue = [];
+let rows = [];
+let rowIdCounter = 0;
+
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const processBtn = document.getElementById('processBtn');
+const queueList = document.getElementById('queueList');
+const expenseBody = document.getElementById('expenseBody');
+const expenseFoot = document.getElementById('expenseFoot');
+const exportBtn = document.getElementById('exportBtn');
+const processingOverlay = document.getElementById('processingOverlay');
+
+uploadZone.onclick = () => fileInput.click();
+uploadZone.ondragover = e => { e.preventDefault(); uploadZone.classList.add('dragover'); };
+uploadZone.ondragleave = () => uploadZone.classList.remove('dragover');
+uploadZone.ondrop = e => { e.preventDefault(); uploadZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); };
+fileInput.onchange = e => handleFiles(e.target.files);
+
+function handleFiles(files) {
+  for (const f of files) {
+    if (!f.type.match(/image\/|pdf/)) {
+      dbg('warn', `スキップ: ${f.name}`, `非対応形式: ${f.type}`);
+      continue;
+    }
+    const id = 'f' + Date.now() + Math.random().toString(36).slice(2);
+    const url = URL.createObjectURL(f);
+    fileQueue.push({ id, file: f, url, status: 'pending' });
+    dbg('info', `ファイル追加: ${f.name}`, `サイズ: ${(f.size/1024).toFixed(1)}KB, 種別: ${f.type}`);
+  }
+  renderQueue();
+  renderPreviewDebug();
+  processBtn.disabled = fileQueue.filter(f => f.status === 'pending').length === 0;
+}
+
+function renderQueue() {
+  if (fileQueue.length === 0) {
+    queueList.innerHTML = '<div style="color:#bbb; font-size:13px; text-align:center; padding:20px 0;">ファイルなし</div>';
+    return;
+  }
+  queueList.innerHTML = fileQueue.map(f => `
+    <div class="queue-item" id="qi_${f.id}">
+      ${f.file.type.startsWith('image/') ? `<img class="thumb" src="${f.url}" alt="">` : '<div class="thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;">📄</div>'}
+      <span class="name" title="${f.file.name}">${f.file.name}</span>
+      <span class="status status-${f.status}">${{pending:'待機',processing:'解析中',done:'完了',error:'エラー'}[f.status]}</span>
+      ${f.status === 'pending' ? `<button class="remove-btn" onclick="removeFile('${f.id}')">✕</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function removeFile(id) {
+  fileQueue = fileQueue.filter(f => f.id !== id);
+  renderQueue();
+  renderPreviewDebug();
+  processBtn.disabled = fileQueue.filter(f => f.status === 'pending').length === 0;
+}
+
+processBtn.onclick = async () => {
+  const pending = fileQueue.filter(f => f.status === 'pending');
+  if (!pending.length) return;
+  processBtn.disabled = true;
+  
+  const bar = document.getElementById('progressBar');
+  const fill = document.getElementById('progressFill');
+  bar.style.display = 'block';
+  
+  for (let i = 0; i < pending.length; i++) {
+    const f = pending[i];
+    f.status = 'processing';
+    renderQueue();
+    renderPreviewDebug();
+    
+    showProcessing(`解析中 (${i+1}/${pending.length})`, f.file.name);
+    dbg('info', `解析開始: ${f.file.name}`, `${i+1}/${pending.length}`);
+    
+    try {
+      const data = await analyzeReceipt(f.file, f.url);
+      dbg('success', `解析成功: ${f.file.name}`, `勘定科目: ${data.account||'—'}, 金額: ${data.amount||'—'}, 支払先: ${data.payee||'—'}`);
+      data._imageUrl = f.url;
+      data._fileName = f.file.name;
+      addRow(data);
+      f.status = 'done';
+    } catch(e) {
+      f.status = 'error';
+      dbgError(`解析失敗: ${f.file.name}`, e, { fileName: f.file.name, fileSize: f.file.size });
+      showToast('エラー: ' + f.file.name + ' — ' + e.message, 'error');
+    }
+    renderQueue();
+    renderPreviewDebug();
+  }
+  
+  fill.style.width = '100%';
+  setTimeout(() => { bar.style.display = 'none'; fill.style.width = '0%'; }, 800);
+  hideProcessing();
+  processBtn.disabled = fileQueue.filter(f => f.status === 'pending').length === 0;
+  showToast('解析完了しました', 'success');
+  updateExportBtn();
+};
+
+async function analyzeReceipt(file, url) {
+  const key = getApiKey();
+  if (!key) throw new Error('APIキーが設定されていません。左サイドバーに入力してください。');
+
+  const base64 = await fileToBase64(file);
+  const mediaType = file.type === 'application/pdf' ? 'application/pdf' : file.type;
+  
+  const systemPrompt = `あなたは日本の経費精算システムのAIアシスタントです。領収書・レシート画像を解析して、以下のJSON形式で情報を抽出してください。読み取れない項目はnullにしてください。
+
+勘定科目は以下から選んでください：
+${ACCOUNTS.join('、')}
+
+内容・目的のルール：
+- 接待交際費で飲食店 → 「懇親会」
+- タクシー → 「タクシー」
+- 管理経費 → 「管理物件物品」
+- 租税公課 → 「役所調査」
+- 旅費交通費でパスモ関連 → 「電車」
+
+返却JSONのキー：
+- payment_date: 領収日（YYYY-MM-DD形式）
+- account: 勘定科目
+- purpose: 内容・目的
+- transaction_month: 取引月（例: "1月"）
+- payee: 支払先（会社名または屋号）
+- payment_method: 支払手段（"現金" または "カード"、不明はnull）
+- amount: 金額（数値のみ、税込）
+
+JSONのみ返してください。説明不要。`;
+
+  const contentItem = file.type === 'application/pdf'
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+    : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } };
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: [contentItem, { type: 'text', text: '領収書を解析してJSONで返してください。' }] }]
+    })
+  });
+  
+  dbg('info', `API応答: HTTP ${resp.status}`, `ファイル: ${file.name}`);
+  if (!resp.ok) {
+    const errText = await resp.text().catch(()=>'');
+    dbgError(`APIエラー HTTP ${resp.status}`, new Error(errText || resp.statusText), { status: resp.status, file: file.name });
+    throw new Error('API error ' + resp.status);
+  }
+  const res = await resp.json();
+  const text = res.content.map(c => c.text || '').join('');
+  dbg('info', 'APIレスポンス受信', text.slice(0, 300) + (text.length > 300 ? '...' : ''));
+  const clean = text.replace(/```json|```/g, '').trim();
+  let parsed;
+  try {
+    parsed = JSON.parse(clean);
+  } catch(e) {
+    dbgError('JSONパース失敗', e, { raw: clean.slice(0, 500) });
+    throw new Error('JSONパース失敗: ' + e.message);
+  }
+  dbg('success', 'JSON解析完了', JSON.stringify(parsed));
+  return parsed;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = () => reject(new Error('ファイル読み込みエラー'));
+    r.readAsDataURL(file);
+  });
+}
+
+function formatDateJP(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  const y = d.getFullYear();
+  const base = 2018;
+  const reiwa = y - base;
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `R${reiwa}.${m}.${day}`;
+}
+
+function addRow(data) {
+  const id = ++rowIdCounter;
+  const row = {
+    id,
+    imageUrl: data._imageUrl || null,
+    fileName: data._fileName || '',
+    payment_date: data.payment_date || '',
+    account: data.account || '',
+    purpose: data.purpose || '',
+    transaction_month: data.transaction_month || '',
+    payee: data.payee || '',
+    payment_method: data.payment_method || '',
+    amount: data.amount || '',
+    light_tax: '',
+    invoice: '',
+    ledger_only: ''
+  };
+  rows.push(row);
+  renderTable();
+}
+
+/* ===== ソート管理 ===== */
+let sortState = { col: null, dir: 1 }; // dir: 1=昇順, -1=降順
+
+// 各列のソート用値を返す関数
+const SORT_GETTERS = {
+  date:    r => { const s = r.payment_date_jp || formatDateJP(r.payment_date); return s.replace(/[Rr](\d+)\.(\d+)\.(\d+)/, (_,y,m,d)=>`${y.padStart(3,'0')}${m.padStart(2,'0')}${d.padStart(2,'0')}`); },
+  account: r => r.account || '',
+  purpose: r => r.purpose || '',
+  month:   r => { const m = parseInt((r.transaction_month||'').replace('月','')); return isNaN(m)?99:m; },
+  payee:   r => r.payee || '',
+  payment: r => r.payment_method || '',
+  amount:  r => parseFloat(r.amount) || 0,
+};
+
+function sortBy(col) {
+  if (sortState.col === col) {
+    sortState.dir *= -1; // 同じ列なら昇順/降順を切り替え
+  } else {
+    sortState.col = col;
+    sortState.dir = 1;
+  }
+  const getter = SORT_GETTERS[col];
+  if (!getter) return;
+  rows.sort((a, b) => {
+    const va = getter(a), vb = getter(b);
+    if (va < vb) return -1 * sortState.dir;
+    if (va > vb) return  1 * sortState.dir;
+    return 0;
+  });
+  renderTable();
+  dbg('info', `ソート: ${col}`, sortState.dir === 1 ? '昇順' : '降順');
+}
+
+function updateSortIndicators() {
+  document.querySelectorAll('th[data-col]').forEach(th => {
+    const col = th.dataset.col;
+    const base = th.dataset.label || th.textContent.replace(/[▲▼]/g,'').trim();
+    th.dataset.label = base;
+    if (sortState.col === col) {
+      th.textContent = base + (sortState.dir === 1 ? ' ▲' : ' ▼');
+      th.style.color = '#3a86ff';
+    } else {
+      th.textContent = base;
+      th.style.color = '';
+    }
+  });
+}
+/* ===== END ソート管理 ===== */
+
+/* ===== 列表示管理 ===== */
+const COL_DEFS = [
+  { key:'date',    label:'A：支払日',   visible:true },
+  { key:'account', label:'B：勘定科目', visible:true },
+  { key:'purpose', label:'C：内容・目的',visible:true },
+  { key:'month',   label:'D：取引月',   visible:true },
+  { key:'payee',   label:'E：支払先',   visible:true },
+  { key:'payment', label:'F：支払手段', visible:true },
+  { key:'tax',     label:'G：軽減税率', visible:true },
+  { key:'invoice', label:'H：インボイス',visible:true },
+  { key:'ledger',  label:'I：帳簿のみ', visible:true },
+  { key:'amount',  label:'J：金額',     visible:true },
+];
+
+function isVisible(key) {
+  return COL_DEFS.find(c => c.key === key)?.visible !== false;
+}
+
+function toggleColSettings() {
+  const panel = document.getElementById('colSettingsPanel');
+  const btn = document.getElementById('colSettingsBtn');
+  const showing = panel.style.display === 'none';
+  panel.style.display = showing ? 'flex' : 'none';
+  btn.style.background = showing ? '#f0f5ff' : '#fff';
+  btn.style.borderColor = showing ? '#3a86ff' : '#d0d0c8';
+  if (showing) buildColSettingsPanel();
+}
+
+function buildColSettingsPanel() {
+  const panel = document.getElementById('colSettingsPanel');
+  const checks = COL_DEFS.map(c => `
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#333;cursor:pointer;white-space:nowrap;padding:4px 8px;border:1px solid #e8e8e4;border-radius:6px;background:${c.visible?'#fff':'#f5f5f0'};">
+      <input type="checkbox" ${c.visible?'checked':''} onchange="toggleCol('${c.key}',this.checked)" style="width:auto;">
+      ${c.label}
+    </label>`).join('');
+  panel.innerHTML = `<span style="font-size:11px;color:#888;width:100%;display:block;margin-bottom:6px;">チェックを外した列は非表示・コピー時も除外されます</span>${checks}`;
+}
+
+function toggleCol(key, visible) {
+  const col = COL_DEFS.find(c => c.key === key);
+  if (col) col.visible = visible;
+  applyColVisibility();
+  buildColSettingsPanel();
+}
+
+function applyColVisibility() {
+  COL_DEFS.forEach(c => {
+    // thead
+    const th = document.querySelector(`th[data-col="${c.key}"]`);
+    if (th) th.style.display = c.visible ? '' : 'none';
+    // tbody
+    document.querySelectorAll(`td[data-col="${c.key}"]`).forEach(td => {
+      td.style.display = c.visible ? '' : 'none';
+    });
+  });
+}
+/* ===== END 列表示管理 ===== */
+
+/* ===== 行ドラッグ並び替え ===== */
+let dragSrcId = null;
+
+function initDragRow(el, rowId) {
+  el.draggable = true;
+  el.style.cursor = 'grab';
+  el.addEventListener('dragstart', e => {
+    dragSrcId = rowId;
+    e.dataTransfer.effectAllowed = 'move';
+    el.style.opacity = '0.5';
+  });
+  el.addEventListener('dragend', e => {
+    el.style.opacity = '';
+    document.querySelectorAll('#expenseBody tr').forEach(r => r.classList.remove('drag-over'));
+  });
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('#expenseBody tr').forEach(r => r.classList.remove('drag-over'));
+    el.classList.add('drag-over');
+  });
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    if (dragSrcId === rowId) return;
+    const srcIdx = rows.findIndex(r => r.id === dragSrcId);
+    const dstIdx = rows.findIndex(r => r.id === rowId);
+    if (srcIdx < 0 || dstIdx < 0) return;
+    const [moved] = rows.splice(srcIdx, 1);
+    rows.splice(dstIdx, 0, moved);
+    renderTable();
+    dbg('info', '行を並び替え', `${srcIdx+1}番目 → ${dstIdx+1}番目`);
+  });
+}
+/* ===== END 行ドラッグ並び替え ===== */
+
+function renderTable() {
+  if (rows.length === 0) {
+    expenseBody.innerHTML = `<tr id="emptyRow"><td colspan="12"><div class="empty-state"><div class="big-icon">🧾</div><p>領収書をアップロードして「解析する」ボタンを押すと<br>自動的にデータが入力されます</p></div></td></tr>`;
+    expenseFoot.style.display = 'none';
+    return;
+  }
+
+  expenseBody.innerHTML = rows.map(r => {
+    const dispDate = r.payment_date_jp || formatDateJP(r.payment_date);
+    return `
+    <tr id="row_${r.id}">
+      <td style="text-align:center;width:40px;cursor:grab;color:#bbb;font-size:18px;user-select:none;" title="ドラッグで並び替え">⠿</td>
+      <td style="width:36px;text-align:center;padding:4px;">
+        ${r.imageUrl
+          ? `<img class="row-thumb" id="thumb_${r.id}" src="${r.imageUrl}" onclick="openImgPanel('${r.imageUrl}','${escHtml(r.fileName)}',${r.id})" title="${escHtml(r.fileName)}">`
+          : `<span class="row-thumb-empty" title="画像なし">📄</span>`}
+      </td>
+      <td class="col-date" data-col="date"><input type="text" value="${escHtml(dispDate)}" placeholder="R8.1.1" onchange="updateRow(${r.id},'payment_date_jp',this.value)" style="width:90px;"></td>
+      <td class="col-account" data-col="account">
+        <select onchange="updateRow(${r.id},'account',this.value)" style="width:120px;">
+          <option value="">選択...</option>
+          ${ACCOUNTS.map(a => `<option value="${a}" ${r.account===a?'selected':''}>${a}</option>`).join('')}
+        </select>
+      </td>
+      <td class="col-purpose" data-col="purpose"><input type="text" value="${escHtml(r.purpose)}" placeholder="懇親会 等" onchange="updateRow(${r.id},'purpose',this.value)" style="width:110px;"></td>
+      <td class="col-month" data-col="month"><input type="text" value="${escHtml(r.transaction_month)}" placeholder="1月" onchange="updateRow(${r.id},'transaction_month',this.value)" style="width:55px;"></td>
+      <td class="col-payee" data-col="payee"><input type="text" value="${escHtml(r.payee)}" placeholder="支払先" onchange="updateRow(${r.id},'payee',this.value)" style="width:160px;"></td>
+      <td class="col-payment" data-col="payment">
+        <select onchange="updateRow(${r.id},'payment_method',this.value)" style="width:75px;">
+          <option value="">　</option>
+          <option value="現金" ${r.payment_method==='現金'?'selected':''}>現金</option>
+          <option value="カード" ${r.payment_method==='カード'?'selected':''}>カード</option>
+        </select>
+      </td>
+      <td class="col-tax" data-col="tax" style="text-align:center;"><input type="checkbox" ${r.light_tax?'checked':''} onchange="updateRow(${r.id},'light_tax',this.checked?'✓':'')"></td>
+      <td class="col-invoice" data-col="invoice" style="text-align:center;"><input type="checkbox" ${r.invoice?'checked':''} onchange="updateRow(${r.id},'invoice',this.checked?'✓':'')"></td>
+      <td class="col-ledger" data-col="ledger" style="text-align:center;"><input type="checkbox" ${r.ledger_only?'checked':''} onchange="updateRow(${r.id},'ledger_only',this.checked?'✓':'')"></td>
+      <td class="amount-cell" data-col="amount"><input type="number" value="${r.amount}" placeholder="0" onchange="updateRow(${r.id},'amount',this.value)" style="width:90px;text-align:right;"></td>
+      <td style="width:40px;text-align:center;"><button class="row-delete-btn" onclick="deleteRow(${r.id})" title="削除">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  rows.forEach(r => {
+    const tr = document.getElementById(`row_${r.id}`);
+    if (tr) initDragRow(tr, r.id);
+  });
+
+  expenseFoot.style.display = '';
+  applyColVisibility();
+  updateTotal();
+  updateExportBtn();
+  updateSortIndicators();
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updateRow(id, field, value) {
+  const r = rows.find(r => r.id === id);
+  if (r) { r[field] = value; updateTotal(); }
+}
+
+function deleteRow(id) {
+  rows = rows.filter(r => r.id !== id);
+  renderTable();
+}
+
+function updateTotal() {
+  const total = rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  document.getElementById('totalCell').textContent = total.toLocaleString('ja-JP') + ' 円';
+}
+
+function updateExportBtn() {
+  exportBtn.disabled = rows.length === 0;
+  exportBtn.innerHTML = rows.length === 0 ? '📋 Excelに貼り付け用コピー' : `📋 ${rows.length}行をコピー`;
+  document.getElementById('exportHint').style.display = rows.length > 0 ? 'block' : 'none';
+}
+
+document.getElementById('addRowBtn').onclick = () => {
+  addRow({});
+};
+
+document.getElementById('clearBtn').onclick = () => {
+  if (rows.length === 0 && fileQueue.length === 0) return;
+  if (confirm('すべてのデータを削除しますか？')) {
+    rows = [];
+    fileQueue = [];
+    renderTable();
+    renderQueue();
+    processBtn.disabled = true;
+    expenseFoot.style.display = 'none';
+    updateExportBtn();
+  }
+};
+
+exportBtn.onclick = () => {
+  if (rows.length === 0) return;
+  try {
+    copyToClipboard();
+  } catch(e) {
+    console.error(e);
+    showToast('コピーエラー: ' + e.message, 'error');
+  }
+};
+
+function copyToClipboard() {
+  dbg('info', 'クリップボードコピー開始', `行数: ${rows.length}`);
+  refreshDataView();
+
+  // 表示中の列定義のみ使う
+  const visibleCols = [
+    { key:'date',    get: r => r.payment_date_jp || (r.payment_date ? formatDateJP(r.payment_date) : '') },
+    { key:'account', get: r => r.account || '' },
+    { key:'purpose', get: r => r.purpose || '' },
+    { key:'month',   get: r => r.transaction_month || '' },
+    { key:'payee',   get: r => r.payee || '' },
+    { key:'payment', get: r => r.payment_method || '' },
+    { key:'tax',     get: r => r.light_tax || '' },
+    { key:'invoice', get: r => r.invoice || '' },
+    { key:'ledger',  get: r => r.ledger_only || '' },
+    { key:'amount',  get: r => { const a = parseFloat(r.amount); return (!isNaN(a) && a > 0) ? a : ''; } },
+  ].filter(c => isVisible(c.key));
+
+  const tsvRows = rows.map(r => visibleCols.map(c => c.get(r)).join('\t'));
+  const tsv = tsvRows.join('\n');
+
+  navigator.clipboard.writeText(tsv).then(() => {
+    dbg('success', 'クリップボードコピー完了', `${rows.length}行をコピー`);
+    const orig = exportBtn.innerHTML;
+    exportBtn.innerHTML = '✓ コピーしました！';
+    exportBtn.style.background = '#16a34a';
+    setTimeout(() => { exportBtn.innerHTML = orig; exportBtn.style.background = ''; }, 2000);
+    showToast(`${rows.length}行をコピーしました。Excelの貼り付け先セルを選んで Ctrl+V してください。`, 'success');
+  }).catch(err => {
+    dbg('warn', 'clipboard API失敗、フォールバック使用', err.message);
+    const ta = document.createElement('textarea');
+    ta.value = tsv;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(`${rows.length}行をコピーしました。Excelの貼り付け先セルを選んで Ctrl+V してください。`, 'success');
+  });
+}
+
+function showProcessing(title, msg) {
+  document.getElementById('processingTitle').textContent = title;
+  document.getElementById('processingMsg').textContent = msg;
+  processingOverlay.classList.add('show');
+}
+function hideProcessing() { processingOverlay.classList.remove('show'); }
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+/* ===== 画像パネル ===== */
+let currentThumbId = null;
+let panelWidth = 800; // 現在の幅（px）
+const PANEL_MIN = 180;
+const PANEL_MAX = 800;
+
+function openImgPanel(url, name, rowId) {
+  if (currentThumbId !== null) {
+    const prev = document.getElementById(`thumb_${currentThumbId}`);
+    if (prev) prev.classList.remove('active');
+  }
+  currentThumbId = rowId;
+  const thumb = document.getElementById(`thumb_${rowId}`);
+  if (thumb) thumb.classList.add('active');
+
+  document.getElementById('imgPanelImg').src = url;
+  document.getElementById('imgPanelTitle').textContent = name || '領収書';
+  const panel = document.getElementById('imgPanel');
+  panel.classList.add('open');
+  panel.style.width = panelWidth + 'px';
+  document.querySelector('.content').style.marginLeft = panelWidth + 'px';
+}
+
+function closeImgPanel() {
+  const panel = document.getElementById('imgPanel');
+  panel.classList.remove('open');
+  panel.style.width = '';
+  document.querySelector('.content').style.marginLeft = '';
+  if (currentThumbId !== null) {
+    const thumb = document.getElementById(`thumb_${currentThumbId}`);
+    if (thumb) thumb.classList.remove('active');
+    currentThumbId = null;
+  }
+}
+
+// リサイズハンドルのドラッグ処理
+(function() {
+  const handle = document.getElementById('imgPanelResize');
+  const panel  = document.getElementById('imgPanel');
+  let dragging = false;
+  let startX = 0;
+  let startW = 0;
+
+  handle.addEventListener('mousedown', e => {
+    if (!panel.classList.contains('open')) return;
+    dragging = true;
+    startX = e.clientX;
+    startW = panel.offsetWidth;
+    handle.classList.add('dragging');
+    panel.classList.add('resizing');
+    document.querySelector('.content').classList.add('resizing');
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const delta = e.clientX - startX;
+    const newW  = Math.min(PANEL_MAX, Math.max(PANEL_MIN, startW + delta));
+    panelWidth = newW;
+    panel.style.width = newW + 'px';
+    document.querySelector('.content').style.marginLeft = newW + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    panel.classList.remove('resizing');
+    document.querySelector('.content').classList.remove('resizing');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+
+  // タッチ対応
+  handle.addEventListener('touchstart', e => {
+    if (!panel.classList.contains('open')) return;
+    dragging = true;
+    startX = e.touches[0].clientX;
+    startW = panel.offsetWidth;
+    panel.classList.add('resizing');
+    document.querySelector('.content').classList.add('resizing');
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const delta = e.touches[0].clientX - startX;
+    const newW  = Math.min(PANEL_MAX, Math.max(PANEL_MIN, startW + delta));
+    panelWidth = newW;
+    panel.style.width = newW + 'px';
+    document.querySelector('.content').style.marginLeft = newW + 'px';
+  }, { passive: false });
+
+  document.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    panel.classList.remove('resizing');
+    document.querySelector('.content').classList.remove('resizing');
+  });
+})();
+/* ===== END 画像パネル ===== */
+
+// 後方互換
+function openLightbox(url) { openImgPanel(url, '領収書', null); }
+function closeLightbox() { closeImgPanel(); }
+</script>
+
+</body>
+</html>
