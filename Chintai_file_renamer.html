@@ -703,10 +703,12 @@ async function openPreview(idx){
     </div>`;
 
   if(it.ext==='pdf'){
-    if(!it.previewUrl){
-      const buf=await it.file.arrayBuffer();
-      it.previewUrl=URL.createObjectURL(new Blob([buf],{type:'application/pdf'}));
-    }
+    // 毎回元ファイルから新しいBlobURLを生成（DLと独立・解放しない）
+    const buf = await it.file.arrayBuffer();
+    const newUrl = URL.createObjectURL(new Blob([buf], {type:'application/pdf'}));
+    // 前のURLを解放してから新しいURLをセット
+    if(it.previewUrl) URL.revokeObjectURL(it.previewUrl);
+    it.previewUrl = newUrl;
     _showPreview(it);
   } else {
     if(!it.previewHtml){
@@ -1086,6 +1088,8 @@ function copyWord(word) {
 }
 
 function clearAll(){
+  // previewUrlを全て解放
+  files.forEach(f => { if(f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
   files.length=0; activeIdx=null;
   ['fileListSection','statsRow','progressBar','logSection'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('fileList').innerHTML='';
