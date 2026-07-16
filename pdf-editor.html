@@ -20,7 +20,22 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 15% 20%,rgba(224,90,122,.06) 0%,transparent 50%),radial-gradient(circle at 85% 80%,rgba(240,149,106,.06) 0%,transparent 50%);pointer-events:none;z-index:0}
-.container{max-width:960px;margin:0 auto;padding:24px 20px 60px;position:relative;z-index:1}
+.container{max-width:1280px;margin:0 auto;padding:24px 20px 60px;position:relative;z-index:1}
+
+/* Layout: sidebar + main */
+.layout{display:flex;gap:20px;align-items:flex-start}
+.sidebar{width:262px;flex-shrink:0;position:sticky;top:20px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 40px);overflow-y:auto;padding-right:2px}
+.main{flex:1;min-width:0}
+.side-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 2px 12px var(--shadow2)}
+.side-label{font-size:10px;font-weight:500;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.side-btn{width:100%;justify-content:center;margin-bottom:8px}
+.side-btn:last-child{margin-bottom:0}
+.side-count{font-size:10px;font-family:'DM Mono',monospace;color:var(--accent);font-weight:500}
+.side-hint{font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.5;margin-top:8px}
+@media(max-width:860px){
+  .layout{flex-direction:column}
+  .sidebar{width:100%;position:static;max-height:none}
+}
 
 /* Header */
 header{margin-bottom:20px}
@@ -35,15 +50,8 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
 .btn-back{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;text-decoration:none;transition:all .2s;font-family:'Noto Sans JP',sans-serif;box-shadow:0 2px 8px var(--shadow);white-space:nowrap}
 .btn-back:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-light)}
 
-/* Tabs */
-.tab-bar{display:flex;gap:6px;margin-bottom:20px;background:var(--surface);padding:5px;border-radius:12px;border:1px solid var(--border);box-shadow:0 2px 12px var(--shadow2)}
-.tab{flex:1;padding:9px 0;border-radius:8px;border:none;background:transparent;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
-.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 3px 10px var(--shadow)}
-.tab:hover:not(.active){background:var(--surface2);color:var(--text)}
-.panel{display:none}.panel.active{display:block}
-
 /* Drop zone */
-.drop-zone{border:2px dashed var(--border);border-radius:14px;padding:32px 24px;cursor:pointer;transition:all .3s;background:var(--surface);position:relative;overflow:hidden;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:16px;box-shadow:0 2px 12px var(--shadow2)}
+.drop-zone{border:2px dashed var(--border);border-radius:14px;padding:28px 24px;cursor:pointer;transition:all .3s;background:var(--surface);position:relative;overflow:hidden;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:16px;box-shadow:0 2px 12px var(--shadow2)}
 .drop-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(224,90,122,.08) 0%,transparent 70%);opacity:0;transition:opacity .3s}
 .drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:var(--accent-light)}
 .drop-zone:hover::before,.drop-zone.drag-over::before{opacity:1}
@@ -53,12 +61,22 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
 .drop-sub{font-size:12px;color:var(--text-muted)}
 .drop-sub b{color:var(--accent);font-weight:600}
 
+/* Merge bar */
+.merge-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;box-shadow:0 2px 12px var(--shadow2)}
+.merge-bar label{font-size:12px;color:var(--text-muted);white-space:nowrap}
+.merge-name-input{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .2s}
+.merge-name-input:focus{border-color:var(--accent)}
+.merge-name-input::placeholder{color:var(--text-dim)}
+.merge-hint{width:100%;font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace}
+
 /* Section header */
-.section-header{display:flex;align-items:center;justify-content:space-between;margin:20px 0 12px;flex-wrap:wrap;gap:8px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin:18px 0 12px;flex-wrap:wrap;gap:8px}
 .section-title{font-size:11px;font-weight:500;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:.1em;text-transform:uppercase}
+.sel-count{font-size:11px;font-family:'DM Mono',monospace;color:var(--accent);font-weight:500}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:500;font-family:'Noto Sans JP',sans-serif;cursor:pointer;transition:all .2s;border:none}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
 .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 14px var(--shadow)}
 .btn-primary:hover:not(:disabled){opacity:.88;transform:translateY(-1px)}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
@@ -67,45 +85,67 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
 .btn-success:disabled{opacity:.4;cursor:not-allowed}
 .btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);box-shadow:0 2px 8px var(--shadow2)}
 .btn-ghost:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-light)}
+.btn-danger{background:var(--surface);border:1px solid rgba(224,64,64,.35);color:var(--error);box-shadow:0 2px 8px var(--shadow2)}
+.btn-danger:hover{background:rgba(224,64,64,.08);border-color:var(--error)}
 
 /* File list */
 .file-list{display:flex;flex-direction:column;gap:8px}
-.file-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:grab;transition:all .2s;user-select:none;box-shadow:0 2px 8px var(--shadow2)}
-.file-item:hover{border-color:var(--accent);background:var(--accent-light);transform:translateX(2px)}
+.file-block{border-radius:12px;transition:all .2s}
+.file-item{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:grab;transition:all .2s;user-select:none;box-shadow:0 2px 8px var(--shadow2)}
+.file-item:hover{border-color:var(--accent);background:var(--accent-light)}
 .file-item.dragging{opacity:.4;cursor:grabbing}
 .file-item.drag-target{border-color:var(--accent);border-style:dashed;background:var(--accent-light)}
+.file-item.checked{border-color:var(--accent);box-shadow:0 2px 12px var(--shadow)}
+.file-item.expanded-item{border-bottom-left-radius:0;border-bottom-right-radius:0}
 .drag-handle{color:var(--text-dim);font-size:16px;flex-shrink:0}
+.file-check{width:20px;height:20px;flex-shrink:0;border-radius:6px;border:2px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .15s}
+.file-check:hover{border-color:var(--accent)}
+.file-item.checked .file-check{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:var(--accent);color:#fff}
 .file-icon-wrap{width:36px;height:36px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,rgba(224,90,122,.12),rgba(240,149,106,.12));display:flex;align-items:center;justify-content:center;font-size:18px}
-.file-info{flex:1;min-width:0}
-.file-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-info{flex:1;min-width:0;cursor:pointer}
+.file-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.badge-annotated{font-size:9px;font-family:'DM Mono',monospace;background:rgba(43,170,114,.12);color:var(--success);border:1px solid rgba(43,170,114,.3);border-radius:5px;padding:1px 6px;flex-shrink:0}
 .file-meta{font-size:11px;color:var(--text-muted);margin-top:2px;font-family:'DM Mono',monospace}
-.file-actions{display:flex;gap:6px;flex-shrink:0}
+.file-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
 .icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
 .icon-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
 .icon-btn.danger:hover{border-color:var(--error);color:var(--error);background:rgba(224,64,64,.08)}
+.expand-chevron{font-size:11px;color:var(--text-muted);transition:transform .2s;flex-shrink:0}
+.file-item.expanded-item .expand-chevron{transform:rotate(180deg);color:var(--accent)}
 
-/* Split controls */
-.split-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px 20px;background:var(--surface);border-radius:12px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 2px 12px var(--shadow2)}
-.split-controls label{font-size:12px;color:var(--text-muted)}
-.field-select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:7px 10px;cursor:pointer;outline:none;transition:border-color .2s}
-.field-select:focus{border-color:var(--accent)}
-.field-input{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:7px 10px;width:160px;outline:none;transition:border-color .2s}
-.field-input:focus{border-color:var(--accent)}
-.field-input::placeholder{color:var(--text-dim)}
+/* Expanded preview area */
+.expand-area{background:var(--surface2);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:16px;animation:expandIn .2s ease}
+@keyframes expandIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.expand-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.expand-toolbar .field-input{background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:7px 10px;width:180px;outline:none;transition:border-color .2s}
+.expand-toolbar .field-input:focus{border-color:var(--accent)}
+.expand-toolbar .field-input::placeholder{color:var(--text-dim)}
+
+/* Big page viewer */
+.viewer-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px}
+.viewer-nav{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.viewer-nav label{font-size:12px;color:var(--text-muted)}
+.page-nav-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.page-nav-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.page-nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.page-info{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;min-width:60px;text-align:center}
+.viewer-canvas-box{display:flex;align-items:flex-start;justify-content:center;background:#faf4f4;border-radius:8px;padding:12px;max-height:640px;overflow:auto}
+.viewer-canvas-box canvas{flex:0 0 auto;align-self:flex-start;max-width:100%;width:auto;height:auto;object-fit:contain;box-shadow:0 4px 20px rgba(42,31,42,.15);border-radius:4px}
 
 /* Thumbnails */
-.thumbnails-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:14px;margin-top:8px}
-.thumb-item{display:flex;flex-direction:column;align-items:center;cursor:grab;transition:all .2s;padding:10px;border-radius:12px;border:2px solid transparent;background:var(--surface);user-select:none;box-shadow:0 2px 10px var(--shadow2)}
+.thumbnails-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px;margin-top:6px}
+.thumb-wrapper{position:relative}
+.thumb-item{display:flex;flex-direction:column;align-items:center;cursor:grab;transition:all .2s;padding:8px;border-radius:12px;border:2px solid transparent;background:var(--surface);user-select:none;box-shadow:0 2px 10px var(--shadow2)}
 .thumb-item:hover{border-color:var(--accent);background:var(--accent-light);transform:translateY(-2px)}
 .thumb-item.selected{border-color:var(--accent);background:var(--accent-light)}
+.thumb-item.viewing{border-color:var(--accent2)}
 .thumb-item.dragging{opacity:.3}
 .thumb-item.drag-target{border-color:var(--accent2);border-style:dashed}
-.thumb-canvas{width:110px;height:150px;border-radius:6px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(42,31,42,.12)}
-.thumb-canvas canvas{width:100%;height:100%;object-fit:contain}
-.thumb-label{margin-top:7px;font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace}
-.thumb-wrapper{position:relative}
-.thumb-num{position:absolute;top:2px;right:2px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border-radius:5px;font-size:9px;padding:2px 6px;font-weight:700;font-family:'DM Mono',monospace}
-.thumb-check{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;border:2px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s}
+.thumb-canvas{width:100px;height:136px;border-radius:6px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(42,31,42,.12)}
+.thumb-canvas canvas,.thumb-canvas img{width:100%;height:100%;object-fit:contain}
+.thumb-label{margin-top:6px;font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace}
+.thumb-num{position:absolute;top:2px;right:2px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border-radius:5px;font-size:9px;padding:2px 6px;font-weight:700;font-family:'DM Mono',monospace;pointer-events:none}
+.thumb-check{position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:50%;border:2px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:transparent;transition:all .15s;z-index:2}
 .thumb-item.selected .thumb-check{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:var(--accent);color:white}
 
 /* Info badge */
@@ -123,79 +163,51 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
 .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
 @keyframes dot{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
 
-/* ═══════════════════════════════════════
-   DRAW PANEL
-═══════════════════════════════════════ */
-
-/* Page selector */
-.draw-page-nav{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;box-shadow:0 2px 12px var(--shadow2)}
+/* ═══════════ DRAW WORKSPACE ═══════════ */
+.draw-section{margin-top:24px;border:1.5px solid var(--accent);border-radius:14px;padding:16px;background:var(--surface);box-shadow:0 4px 20px var(--shadow)}
+.draw-section-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.draw-file-label{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.draw-file-label .pen{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.draw-page-nav{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px}
 .draw-page-nav label{font-size:12px;color:var(--text-muted)}
-.page-nav-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.page-nav-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
-.page-nav-btn:disabled{opacity:.3;cursor:not-allowed}
-.page-info{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;min-width:60px;text-align:center}
-
-/* Tool palette */
-.tool-palette{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;box-shadow:0 2px 12px var(--shadow2);align-items:center}
+.tool-palette{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;align-items:center}
 .palette-group{display:flex;gap:6px;align-items:center}
 .palette-sep{width:1px;height:28px;background:var(--border);flex-shrink:0}
-
-.tool-btn{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;flex-shrink:0;position:relative}
+.tool-btn{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;flex-shrink:0;position:relative}
 .tool-btn:hover{border-color:var(--accent);background:var(--accent-light)}
 .tool-btn.active{border-color:var(--accent);background:linear-gradient(135deg,rgba(224,90,122,.18),rgba(240,149,106,.18));box-shadow:0 2px 8px var(--shadow)}
 .tool-btn svg{width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tool-btn.active svg{stroke:var(--accent)}
 .tool-btn:hover svg{stroke:var(--accent)}
-
 .tool-label{font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:.05em}
-
-/* Color swatches */
 .color-swatches{display:flex;gap:5px;align-items:center}
 .swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .15s;flex-shrink:0}
 .swatch.active{border-color:var(--text);transform:scale(1.2)}
 .swatch:hover{transform:scale(1.15)}
-
-/* Stroke width */
 .stroke-btns{display:flex;gap:4px;align-items:center}
-.stroke-btn{width:32px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.stroke-btn{width:32px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .stroke-btn:hover{border-color:var(--accent)}
 .stroke-btn.active{border-color:var(--accent);background:var(--accent-light)}
 .stroke-btn svg{stroke:var(--text-muted)}
 .stroke-btn.active svg{stroke:var(--accent)}
-
-/* Fill toggle */
-.fill-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;font-size:11px;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;transition:all .15s}
+.fill-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:11px;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;transition:all .15s}
 .fill-btn:hover{border-color:var(--accent);color:var(--accent)}
 .fill-btn.active{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
-
-/* Canvas wrapper */
-.draw-canvas-wrap{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 4px 20px var(--shadow2);display:flex;align-items:flex-start;justify-content:center;padding:20px;min-height:200px}
+.draw-canvas-wrap{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:20px;min-height:200px}
 .draw-canvas-inner{position:relative;display:inline-block}
 #pdfRenderCanvas{display:block;border-radius:4px;box-shadow:0 4px 20px rgba(42,31,42,.15)}
 #drawCanvas{position:absolute;top:0;left:0;border-radius:4px}
-
-/* Polygon snap indicator */
 .snap-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid white;position:absolute;pointer-events:none;display:none;transform:translate(-50%,-50%);box-shadow:0 0 6px var(--accent)}
-
-
-/* Selection overlay */
 .sel-box{position:absolute;pointer-events:none;border:2px dashed var(--accent);border-radius:3px;box-shadow:0 0 0 1px rgba(224,90,122,.25);display:none}
 .sel-handle{position:absolute;width:10px;height:10px;background:white;border:2px solid var(--accent);border-radius:2px;pointer-events:all;transform:translate(-50%,-50%);box-shadow:0 1px 4px var(--shadow)}
 .sel-del{position:absolute;top:-14px;right:-14px;width:22px;height:22px;border-radius:50%;background:var(--error);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:all;box-shadow:0 2px 6px rgba(224,64,64,.4);border:2px solid white;line-height:1}
 .sel-del:hover{transform:scale(1.15)}
-/* Selected shape properties panel */
 .sel-props{display:none;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 16px;background:linear-gradient(135deg,rgba(224,90,122,.07),rgba(240,149,106,.07));border:1.5px solid var(--accent);border-radius:12px;margin-bottom:14px;box-shadow:0 2px 12px var(--shadow2)}
 .sel-props-label{font-size:11px;font-weight:600;color:var(--accent);font-family:"DM Mono",monospace;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 .sel-props-sep{width:1px;height:24px;background:rgba(224,90,122,.2);flex-shrink:0}
-
-/* Action bar */
 .draw-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
-
-/* Undo/redo hint */
 .kbd{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)}
-
-#fileInputDraw{display:none}
-#fileInputMerge,#fileInputSplit,#fileInputReorder{display:none}
+#fileInput{display:none}
 </style>
 </head>
 <body>
@@ -206,304 +218,225 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
       <div>
         <div class="logo"><div class="logo-dot"></div>PDF Studio</div>
         <h1>PDF <span>編集ツール</span></h1>
-        <p class="subtitle">対応機能：<span>結合 / 分割 / 並び替え / 書き込み</span></p>
+        <p class="subtitle">1つの画面で <span>結合 / 分割（抽出） / 並び替え / 書き込み</span> を同時に</p>
       </div>
       <a class="btn-back" href="./index.html">← ポータルに戻る</a>
     </div>
   </header>
 
-  <div class="tab-bar">
-    <button class="tab active" onclick="switchTab('merge',this)">🔗 PDF結合</button>
-    <button class="tab" onclick="switchTab('split',this)">✂️ PDF分割</button>
-    <button class="tab" onclick="switchTab('reorder',this)">🔀 並び替え</button>
-    <button class="tab" onclick="switchTab('draw',this)">✏️ 書き込み</button>
-  </div>
+  <input type="file" id="fileInput" accept=".pdf" multiple>
 
-  <!-- ═══ MERGE ═══ -->
-  <div id="panel-merge" class="panel active">
-    <div class="drop-zone" id="mergeDropzone" onclick="document.getElementById('fileInputMerge').click()">
-      <div class="drop-icon">📑</div>
-      <div class="drop-text">
-        <div class="drop-title">PDFファイルをここにドロップ</div>
-        <div class="drop-sub">または <b>クリックして選択</b>（複数同時OK）</div>
+  <div class="layout">
+
+    <!-- ═══ LEFT SIDEBAR ═══ -->
+    <aside class="sidebar">
+      <div class="side-card">
+        <button class="btn btn-primary side-btn" onclick="document.getElementById('fileInput').click()">📄 ファイルを追加</button>
+        <div class="side-hint">ここのボタン、または右側へのドラッグ＆ドロップで追加できます（複数同時OK）。</div>
       </div>
-    </div>
-    <input type="file" id="fileInputMerge" accept=".pdf" multiple>
-    <div id="mergeFileList" style="display:none">
-      <div class="section-header">
-        <span class="section-title">ファイル一覧（ドラッグで順番変更）</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost" onclick="document.getElementById('fileInputMerge').click()">＋ 追加</button>
-          <button class="btn btn-success" onclick="mergePDFs()" id="mergeBtn">⬇ 結合してダウンロード</button>
+
+      <div class="side-card" id="sideMerge" style="display:none">
+        <div class="side-label">結合</div>
+        <input type="text" class="merge-name-input" id="mergeName" placeholder="" style="width:100%;margin-bottom:8px">
+        <button class="btn btn-success side-btn" id="mergeBtn" onclick="mergePDFs()">⬇ 結合してダウンロード</button>
+        <button class="btn btn-danger side-btn" id="btnDeleteMerged" style="display:none" onclick="deleteMergedFiles()">🗑 結合前のファイルを一括削除</button>
+        <div class="side-hint" id="mergeHint"></div>
+      </div>
+
+      <div class="side-card" id="sideSelect" style="display:none">
+        <div class="side-label">選択操作 <span class="side-count" id="selCount"></span></div>
+        <button class="btn btn-ghost side-btn" onclick="moveChecked(-1)" title="選択したファイルをまとめて上へ">⬆ 選択を上へ</button>
+        <button class="btn btn-ghost side-btn" onclick="moveChecked(1)" title="選択したファイルをまとめて下へ">⬇ 選択を下へ</button>
+        <button class="btn btn-ghost side-btn" onclick="toggleCheckAll()">☑ 全選択 / 解除</button>
+        <button class="btn btn-danger side-btn" onclick="removeChecked()">✕ 選択を削除</button>
+        <div class="side-hint">チェックを2件以上入れると、そのファイルだけを対象に結合・並び替え・削除します。</div>
+      </div>
+    </aside>
+
+    <!-- ═══ RIGHT MAIN ═══ -->
+    <main class="main">
+      <!-- Drop zone -->
+      <div class="drop-zone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <div class="drop-icon">📑</div>
+        <div class="drop-text">
+          <div class="drop-title">PDFファイルをここにドロップ</div>
+          <div class="drop-sub">または <b>クリックして選択</b>（複数同時OK・後から追加もOK）</div>
         </div>
       </div>
-      <div class="file-list" id="mergeList"></div>
-    </div>
-  </div>
 
-  <!-- ═══ SPLIT ═══ -->
-  <div id="panel-split" class="panel">
-    <div class="drop-zone" id="splitDropzone" onclick="document.getElementById('fileInputSplit').click()">
-      <div class="drop-icon">✂️</div>
-      <div class="drop-text">
-        <div class="drop-title">分割するPDFをここにドロップ</div>
-        <div class="drop-sub">または <b>クリックして選択</b></div>
-      </div>
-    </div>
-    <input type="file" id="fileInputSplit" accept=".pdf">
-    <div id="splitPanel" style="display:none">
-      <div class="section-header">
-        <span class="section-title">分割設定</span>
-        <span class="info-badge" id="splitFileInfo"></span>
-      </div>
-      <div class="split-controls">
-        <label>分割方法：</label>
-        <select class="field-select" id="splitMode" onchange="updateSplitUI()">
-          <option value="all">全ページを個別に分割（ZIP）</option>
-          <option value="range">ページ範囲を指定</option>
-          <option value="visual">サムネイルで選択</option>
-        </select>
-        <div id="rangeInput" style="display:none;align-items:center;gap:8px;flex-wrap:wrap">
-          <label>範囲（例: 1-3, 5, 7-10）：</label>
-          <input type="text" class="field-input" id="pageRange" placeholder="1-3, 5">
-          <label>ファイル名：</label>
-          <input type="text" class="field-input" id="rangeFileName" placeholder="例：第1章（省略可）" style="width:190px">
-        </div>
-        <button class="btn btn-primary" id="splitBtn" onclick="doSplit()">⬇ 分割＆ダウンロード</button>
-      </div>
-      <div id="splitThumbs" style="display:none">
+      <!-- File list -->
+      <div id="fileSection" style="display:none">
         <div class="section-header">
-          <span class="section-title">ページを選択（複数可）</span>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-ghost" onclick="selectAllPages()">全選択</button>
-            <button class="btn btn-ghost" onclick="clearPageSelection()">解除</button>
-          </div>
+          <span class="section-title">ファイル一覧（クリックでプレビュー展開 / ドラッグで並び替え）</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-          <label style="font-size:12px;color:var(--text-muted)">ファイル名：</label>
-          <input type="text" class="field-input" id="visualFileName" placeholder="例：抜粋ページ（省略可）" style="width:220px">
-          <button class="btn btn-primary" onclick="downloadSelected()">⬇ 選択ページをダウンロード</button>
+        <div class="file-list" id="fileList"></div>
+      </div>
+
+  <!-- ═══ DRAW WORKSPACE ═══ -->
+  <div class="draw-section" id="drawWorkspace" style="display:none">
+    <div class="draw-section-header">
+      <div class="draw-file-label"><span class="pen">✏️</span><span id="drawFileName"></span> に書き込み中</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeDraw()">✕ 閉じる</button>
+    </div>
+
+    <!-- Page navigation -->
+    <div class="draw-page-nav">
+      <label>ページ：</label>
+      <button class="page-nav-btn" id="drawPrevPage">‹</button>
+      <span class="page-info" id="drawPageInfo">1 / 1</span>
+      <button class="page-nav-btn" id="drawNextPage">›</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11px;color:var(--text-muted)">
+        <span class="kbd">Ctrl+Z</span> 元に戻す &nbsp;
+        <span class="kbd">Ctrl+Y</span> やり直し &nbsp;
+        <span class="kbd">Del</span> 選択削除
+      </span>
+    </div>
+
+    <!-- Tool palette -->
+    <div class="tool-palette">
+      <div class="palette-group">
+        <span class="tool-label">選択</span>
+        <button class="tool-btn" id="tool-select" onclick="setTool('select')" title="選択・移動・リサイズ">
+          <svg viewBox="0 0 24 24"><path d="M4 4l7 18 3-7 7-3z" stroke-width="2"/></svg>
+        </button>
+      </div>
+      <div class="palette-sep"></div>
+      <div class="palette-group">
+        <span class="tool-label">図形</span>
+        <button class="tool-btn active" id="tool-line" onclick="setTool('line')" title="直線">
+          <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/></svg>
+        </button>
+        <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')" title="矢印線">
+          <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="18" y2="6"/><polyline points="10,6 18,6 18,14"/></svg>
+        </button>
+        <button class="tool-btn" id="tool-polygon" onclick="setTool('polygon')" title="多角形（始点と終点を重ねて確定）">
+          <svg viewBox="0 0 24 24"><polygon points="12,4 20,10 17,20 7,20 4,10"/></svg>
+        </button>
+        <button class="tool-btn" id="tool-circle" onclick="setTool('circle')" title="楕円">
+          <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="7"/></svg>
+        </button>
+        <button class="tool-btn" id="tool-triangle" onclick="setTool('triangle')" title="三角形">
+          <svg viewBox="0 0 24 24"><polygon points="12,4 22,20 2,20"/></svg>
+        </button>
+        <button class="tool-btn" id="tool-rect" onclick="setTool('rect')" title="四角形">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
+        </button>
+      </div>
+      <div class="palette-sep"></div>
+      <div class="palette-group">
+        <span class="tool-label">塗り</span>
+        <button class="fill-btn" id="fillToggle" onclick="toggleFill()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          枠のみ
+        </button>
+      </div>
+      <div class="palette-sep"></div>
+      <div class="palette-group">
+        <span class="tool-label">太さ</span>
+        <div class="stroke-btns">
+          <button class="stroke-btn active" id="sw-1" onclick="setStroke(1.5)" title="細い">
+            <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="1.5"/></svg>
+          </button>
+          <button class="stroke-btn" id="sw-2" onclick="setStroke(3)" title="中">
+            <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="3"/></svg>
+          </button>
+          <button class="stroke-btn" id="sw-3" onclick="setStroke(5)" title="太い">
+            <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="5"/></svg>
+          </button>
         </div>
-        <div class="thumbnails-grid" id="splitThumbGrid"></div>
+      </div>
+      <div class="palette-sep"></div>
+      <div class="palette-group">
+        <span class="tool-label">色</span>
+        <div class="color-swatches" id="colorSwatches">
+          <div class="swatch active" style="background:#e05a7a" data-color="#e05a7a" onclick="setColor(this)"></div>
+          <div class="swatch" style="background:#e04040" data-color="#e04040" onclick="setColor(this)"></div>
+          <div class="swatch" style="background:#f0956a" data-color="#f0956a" onclick="setColor(this)"></div>
+          <div class="swatch" style="background:#e8c02a" data-color="#e8c02a" onclick="setColor(this)"></div>
+          <div class="swatch" style="background:#2baa72" data-color="#2baa72" onclick="setColor(this)"></div>
+          <div class="swatch" style="background:#3a7bd5" data-color="#3a7bd5" onclick="setColor(this)"></div>
+          <div class="swatch" style="background:#7c5cbf" data-color="#7c5cbf" onclick="setColor(this)"></div>
+          <div class="swatch" style="background:#2a1f2a" data-color="#2a1f2a" onclick="setColor(this)"></div>
+        </div>
+        <input type="color" id="customColor" value="#e05a7a" oninput="setCustomColor(this.value)"
+          style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:1px;background:none" title="カスタムカラー">
       </div>
     </div>
-  </div>
 
-  <!-- ═══ REORDER ═══ -->
-  <div id="panel-reorder" class="panel">
-    <div class="drop-zone" id="reorderDropzone" onclick="document.getElementById('fileInputReorder').click()">
-      <div class="drop-icon">🔀</div>
-      <div class="drop-text">
-        <div class="drop-title">並び替えるPDFをここにドロップ</div>
-        <div class="drop-sub">または <b>クリックして選択</b></div>
-      </div>
-    </div>
-    <input type="file" id="fileInputReorder" accept=".pdf">
-    <div id="reorderPanel" style="display:none">
-      <div class="section-header">
-        <span class="section-title">ページ並び替え（ドラッグ＆ドロップ）</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost" onclick="resetPageOrder()">リセット</button>
-          <button class="btn btn-success" onclick="saveReordered()">⬇ 保存してダウンロード</button>
-        </div>
-      </div>
-      <div class="thumbnails-grid" id="reorderThumbGrid"></div>
-    </div>
-  </div>
-
-  <!-- ═══ DRAW ═══ -->
-  <div id="panel-draw" class="panel">
-    <div class="drop-zone" id="drawDropzone" onclick="document.getElementById('fileInputDraw').click()">
-      <div class="drop-icon">✏️</div>
-      <div class="drop-text">
-        <div class="drop-title">書き込むPDFをここにドロップ</div>
-        <div class="drop-sub">または <b>クリックして選択</b></div>
-      </div>
-    </div>
-    <input type="file" id="fileInputDraw" accept=".pdf">
-
-    <div id="drawWorkspace" style="display:none">
-
-      <!-- Page navigation -->
-      <div class="draw-page-nav">
-        <label>ページ：</label>
-        <button class="page-nav-btn" id="drawPrevPage">‹</button>
-        <span class="page-info" id="drawPageInfo">1 / 1</span>
-        <button class="page-nav-btn" id="drawNextPage">›</button>
-        <span style="flex:1"></span>
-        <span style="font-size:11px;color:var(--text-muted)">
-          <span class="kbd">Ctrl+Z</span> 元に戻す &nbsp;
-          <span class="kbd">Ctrl+Y</span> やり直し &nbsp;
-          <span class="kbd">Del</span> 選択削除
-        </span>
-      </div>
-
-      <!-- Tool palette -->
-      <div class="tool-palette">
-        <!-- Shape tools -->
-        <div class="palette-group">
-          <span class="tool-label">選択</span>
-          <button class="tool-btn" id="tool-select" onclick="setTool('select')" title="選択・移動・リサイズ">
-            <svg viewBox="0 0 24 24"><path d="M4 4l7 18 3-7 7-3z" stroke-width="2"/></svg>
-          </button>
-        </div>
-
-        <div class="palette-sep"></div>
-
-        <div class="palette-group">
-          <span class="tool-label">図形</span>
-          <!-- Line -->
-          <button class="tool-btn active" id="tool-line" onclick="setTool('line')" title="直線">
-            <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/></svg>
-          </button>
-          <!-- Arrow -->
-          <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')" title="矢印線">
-            <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="18" y2="6"/><polyline points="10,6 18,6 18,14"/></svg>
-          </button>
-          <!-- Polygon -->
-          <button class="tool-btn" id="tool-polygon" onclick="setTool('polygon')" title="多角形（始点と終点を重ねて確定）">
-            <svg viewBox="0 0 24 24"><polygon points="12,4 20,10 17,20 7,20 4,10"/></svg>
-          </button>
-          <!-- Circle -->
-          <button class="tool-btn" id="tool-circle" onclick="setTool('circle')" title="楕円">
-            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="7"/></svg>
-          </button>
-          <!-- Triangle -->
-          <button class="tool-btn" id="tool-triangle" onclick="setTool('triangle')" title="三角形">
-            <svg viewBox="0 0 24 24"><polygon points="12,4 22,20 2,20"/></svg>
-          </button>
-          <!-- Rect -->
-          <button class="tool-btn" id="tool-rect" onclick="setTool('rect')" title="四角形">
-            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
-          </button>
-        </div>
-
-        <div class="palette-sep"></div>
-
-        <!-- Fill toggle -->
-        <div class="palette-group">
-          <span class="tool-label">塗り</span>
-          <button class="fill-btn" id="fillToggle" onclick="toggleFill()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-            枠のみ
-          </button>
-        </div>
-
-        <div class="palette-sep"></div>
-
-        <!-- Stroke width -->
-        <div class="palette-group">
-          <span class="tool-label">太さ</span>
-          <div class="stroke-btns">
-            <button class="stroke-btn active" id="sw-1" onclick="setStroke(1.5)" title="細い">
-              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="1.5"/></svg>
-            </button>
-            <button class="stroke-btn" id="sw-2" onclick="setStroke(3)" title="中">
-              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="3"/></svg>
-            </button>
-            <button class="stroke-btn" id="sw-3" onclick="setStroke(5)" title="太い">
-              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="5"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="palette-sep"></div>
-
-        <!-- Colors -->
-        <div class="palette-group">
-          <span class="tool-label">色</span>
-          <div class="color-swatches" id="colorSwatches">
-            <div class="swatch active" style="background:#e05a7a" data-color="#e05a7a" onclick="setColor(this)"></div>
-            <div class="swatch" style="background:#e04040" data-color="#e04040" onclick="setColor(this)"></div>
-            <div class="swatch" style="background:#f0956a" data-color="#f0956a" onclick="setColor(this)"></div>
-            <div class="swatch" style="background:#e8c02a" data-color="#e8c02a" onclick="setColor(this)"></div>
-            <div class="swatch" style="background:#2baa72" data-color="#2baa72" onclick="setColor(this)"></div>
-            <div class="swatch" style="background:#3a7bd5" data-color="#3a7bd5" onclick="setColor(this)"></div>
-            <div class="swatch" style="background:#7c5cbf" data-color="#7c5cbf" onclick="setColor(this)"></div>
-            <div class="swatch" style="background:#2a1f2a" data-color="#2a1f2a" onclick="setColor(this)"></div>
-          </div>
-          <!-- custom color picker -->
-          <input type="color" id="customColor" value="#e05a7a" oninput="setCustomColor(this.value)"
+    <!-- Selected shape properties -->
+    <div class="sel-props" id="selProps">
+      <span class="sel-props-label">✦ 選択中の図形を編集</span>
+      <div class="sel-props-sep"></div>
+      <div class="palette-group">
+        <span class="tool-label">色</span>
+        <div class="color-swatches" id="selColorSwatches">
+          <div class="swatch" style="background:#e05a7a" data-color="#e05a7a" onclick="applySelColor(this)"></div>
+          <div class="swatch" style="background:#e04040" data-color="#e04040" onclick="applySelColor(this)"></div>
+          <div class="swatch" style="background:#f0956a" data-color="#f0956a" onclick="applySelColor(this)"></div>
+          <div class="swatch" style="background:#e8c02a" data-color="#e8c02a" onclick="applySelColor(this)"></div>
+          <div class="swatch" style="background:#2baa72" data-color="#2baa72" onclick="applySelColor(this)"></div>
+          <div class="swatch" style="background:#3a7bd5" data-color="#3a7bd5" onclick="applySelColor(this)"></div>
+          <div class="swatch" style="background:#7c5cbf" data-color="#7c5cbf" onclick="applySelColor(this)"></div>
+          <div class="swatch" style="background:#2a1f2a" data-color="#2a1f2a" onclick="applySelColor(this)"></div>
+          <input type="color" id="selCustomColor" value="#e05a7a" oninput="applySelCustomColor(this.value)"
             style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:1px;background:none" title="カスタムカラー">
         </div>
       </div>
-
-      <!-- Selected shape properties -->
-      <div class="sel-props" id="selProps">
-        <span class="sel-props-label">✦ 選択中の図形を編集</span>
-        <div class="sel-props-sep"></div>
-
-        <div class="palette-group">
-          <span class="tool-label">色</span>
-          <div class="color-swatches" id="selColorSwatches">
-            <div class="swatch" style="background:#e05a7a" data-color="#e05a7a" onclick="applySelColor(this)"></div>
-            <div class="swatch" style="background:#e04040" data-color="#e04040" onclick="applySelColor(this)"></div>
-            <div class="swatch" style="background:#f0956a" data-color="#f0956a" onclick="applySelColor(this)"></div>
-            <div class="swatch" style="background:#e8c02a" data-color="#e8c02a" onclick="applySelColor(this)"></div>
-            <div class="swatch" style="background:#2baa72" data-color="#2baa72" onclick="applySelColor(this)"></div>
-            <div class="swatch" style="background:#3a7bd5" data-color="#3a7bd5" onclick="applySelColor(this)"></div>
-            <div class="swatch" style="background:#7c5cbf" data-color="#7c5cbf" onclick="applySelColor(this)"></div>
-            <div class="swatch" style="background:#2a1f2a" data-color="#2a1f2a" onclick="applySelColor(this)"></div>
-            <input type="color" id="selCustomColor" value="#e05a7a" oninput="applySelCustomColor(this.value)"
-              style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:1px;background:none" title="カスタムカラー">
-          </div>
-        </div>
-
-        <div class="sel-props-sep"></div>
-
-        <div class="palette-group">
-          <span class="tool-label">太さ</span>
-          <div class="stroke-btns">
-            <button class="stroke-btn" id="sel-sw-1" onclick="applySelStroke(1.5)" title="細い">
-              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="1.5"/></svg>
-            </button>
-            <button class="stroke-btn" id="sel-sw-2" onclick="applySelStroke(3)" title="中">
-              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="3"/></svg>
-            </button>
-            <button class="stroke-btn" id="sel-sw-3" onclick="applySelStroke(5)" title="太い">
-              <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="5"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="sel-props-sep"></div>
-
-        <div class="palette-group">
-          <span class="tool-label">塗り</span>
-          <button class="fill-btn" id="selFillToggle" onclick="applySelFill()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-            枠のみ
+      <div class="sel-props-sep"></div>
+      <div class="palette-group">
+        <span class="tool-label">太さ</span>
+        <div class="stroke-btns">
+          <button class="stroke-btn" id="sel-sw-1" onclick="applySelStroke(1.5)" title="細い">
+            <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="1.5"/></svg>
+          </button>
+          <button class="stroke-btn" id="sel-sw-2" onclick="applySelStroke(3)" title="中">
+            <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="3"/></svg>
+          </button>
+          <button class="stroke-btn" id="sel-sw-3" onclick="applySelStroke(5)" title="太い">
+            <svg width="22" height="14" viewBox="0 0 22 14"><line x1="2" y1="7" x2="20" y2="7" stroke-width="5"/></svg>
           </button>
         </div>
       </div>
+      <div class="sel-props-sep"></div>
+      <div class="palette-group">
+        <span class="tool-label">塗り</span>
+        <button class="fill-btn" id="selFillToggle" onclick="applySelFill()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          枠のみ
+        </button>
+      </div>
+    </div>
 
-      <!-- Canvas area -->
-      <div class="draw-canvas-wrap" id="drawCanvasWrap">
-        <div class="draw-canvas-inner" id="drawCanvasInner">
-          <canvas id="pdfRenderCanvas"></canvas>
-          <canvas id="drawCanvas"></canvas>
-          <div class="snap-dot" id="snapDot"></div>
-          <div class="sel-box" id="selBox">
-            <div class="sel-handle" id="sh-tl" data-dir="tl" style="cursor:nwse-resize"></div>
-            <div class="sel-handle" id="sh-tr" data-dir="tr" style="cursor:nesw-resize"></div>
-            <div class="sel-handle" id="sh-bl" data-dir="bl" style="cursor:nesw-resize"></div>
-            <div class="sel-handle" id="sh-br" data-dir="br" style="cursor:nwse-resize"></div>
-            <div class="sel-del" id="selDel" title="削除">✕</div>
-          </div>
+    <!-- Canvas area -->
+    <div class="draw-canvas-wrap" id="drawCanvasWrap">
+      <div class="draw-canvas-inner" id="drawCanvasInner">
+        <canvas id="pdfRenderCanvas"></canvas>
+        <canvas id="drawCanvas"></canvas>
+        <div class="snap-dot" id="snapDot"></div>
+        <div class="sel-box" id="selBox">
+          <div class="sel-handle" id="sh-tl" data-dir="tl" style="cursor:nwse-resize"></div>
+          <div class="sel-handle" id="sh-tr" data-dir="tr" style="cursor:nesw-resize"></div>
+          <div class="sel-handle" id="sh-bl" data-dir="bl" style="cursor:nesw-resize"></div>
+          <div class="sel-handle" id="sh-br" data-dir="br" style="cursor:nwse-resize"></div>
+          <div class="sel-del" id="selDel" title="削除">✕</div>
         </div>
       </div>
+    </div>
 
-      <!-- Actions -->
-      <div class="draw-actions">
-        <button class="btn btn-ghost" onclick="undoDraw()">↩ 元に戻す</button>
-        <button class="btn btn-ghost" onclick="redoDraw()">↪ やり直し</button>
-        <button class="btn btn-ghost" onclick="clearDrawPage()">🗑 このページをクリア</button>
-        <span style="flex:1"></span>
-        <button class="btn btn-success" onclick="saveDrawnPdf()">⬇ 書き込み済みPDFを保存</button>
-      </div>
+    <!-- Actions -->
+    <div class="draw-actions">
+      <button class="btn btn-ghost" onclick="undoDraw()">↩ 元に戻す</button>
+      <button class="btn btn-ghost" onclick="redoDraw()">↪ やり直し</button>
+      <button class="btn btn-ghost" onclick="clearDrawPage()">🗑 このページをクリア</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-primary" onclick="applyDrawToList()" title="書き込みをファイル一覧に反映します（結合時に反映されます）">✔ 一覧に反映</button>
+      <button class="btn btn-success" onclick="saveDrawnPdf()">⬇ 書き込み済みPDFを保存</button>
+    </div>
+  </div><!-- /drawWorkspace -->
 
-    </div><!-- /drawWorkspace -->
-  </div><!-- /panel-draw -->
+    </main><!-- /main -->
+  </div><!-- /layout -->
 
 </div><!-- /container -->
 <div id="toast-container"></div>
@@ -515,12 +448,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 // ────────────────────────────────────────
 // Shared utils
 // ────────────────────────────────────────
-function switchTab(tab, btn) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('panel-' + tab).classList.add('active');
-  btn.classList.add('active');
-}
 function toast(msg, type = 'info') {
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
@@ -532,6 +459,19 @@ function formatBytes(b) {
   if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
   return (b / 1024 / 1024).toFixed(1) + ' MB';
 }
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function sanitizeFileName(name) {
+  return name.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_').slice(0, 100);
+}
+function downloadBytes(bytes, filename) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
 async function renderPageToCanvas(pdfDoc, pageNum, canvas, scale = 1.4) {
   const page = await pdfDoc.getPage(pageNum);
   const vp = page.getViewport({ scale });
@@ -539,286 +479,503 @@ async function renderPageToCanvas(pdfDoc, pageNum, canvas, scale = 1.4) {
   await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
   return vp;
 }
-async function getPageCount(file) {
-  const bytes = await file.arrayBuffer();
-  const doc = await pdfjsLib.getDocument({ data: bytes }).promise;
-  return doc.numPages;
+
+// ────────────────────────────────────────
+// STATE — 統合ファイルリスト
+// ────────────────────────────────────────
+// entry = {id, name, size, bytes:Uint8Array, doc:pdfjsDoc, pageCount,
+//          pageOrder:[origIdx...], selPages:Set<origIdx>, expanded, checked,
+//          annotated, viewPos, thumbCache:Map<origIdx,dataURL>}
+let files = [];
+let nextId = 1;
+let lastMergedIds = [];
+let mergeNameEdited = false;
+
+document.getElementById('mergeName').addEventListener('input', () => { mergeNameEdited = true; });
+
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', async e => {
+  e.preventDefault(); dropzone.classList.remove('drag-over');
+  await addFiles([...e.dataTransfer.files].filter(f => f.name.toLowerCase().endsWith('.pdf')));
+});
+document.getElementById('fileInput').addEventListener('change', async e => {
+  await addFiles([...e.target.files]); e.target.value = '';
+});
+
+async function addFiles(fileList) {
+  for (const f of fileList) {
+    try {
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+      files.push({
+        id: nextId++, name: f.name, size: f.size, bytes, doc,
+        pageCount: doc.numPages,
+        pageOrder: Array.from({ length: doc.numPages }, (_, i) => i),
+        selPages: new Set(), expanded: false, checked: false,
+        annotated: false, viewPos: 0, thumbCache: new Map()
+      });
+    } catch { toast(`${f.name} の読み込みに失敗しました`, 'error'); }
+  }
+  renderList();
+}
+
+function entryById(id) { return files.find(f => f.id === id); }
+
+// ────────────────────────────────────────
+// RENDER — ファイル一覧
+// ────────────────────────────────────────
+function renderList() {
+  const section = document.getElementById('fileSection');
+  const sideMerge = document.getElementById('sideMerge');
+  const sideSelect = document.getElementById('sideSelect');
+  const list = document.getElementById('fileList');
+
+  if (!files.length) {
+    section.style.display = 'none';
+    sideMerge.style.display = 'none';
+    sideSelect.style.display = 'none';
+    document.getElementById('btnDeleteMerged').style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  sideMerge.style.display = 'block';
+  sideSelect.style.display = 'block';
+  updateMergeName();
+  updateSelCount();
+
+  list.innerHTML = '';
+  files.forEach((f, i) => {
+    const block = document.createElement('div');
+    block.className = 'file-block';
+
+    // ── main row ──
+    const item = document.createElement('div');
+    item.className = 'file-item' + (f.checked ? ' checked' : '') + (f.expanded ? ' expanded-item' : '');
+    item.draggable = true; item.dataset.id = f.id; item.dataset.index = i;
+    const pageInfo = f.pageOrder.length === f.pageCount
+      ? `${f.pageCount}ページ`
+      : `${f.pageOrder.length}/${f.pageCount}ページ`;
+    item.innerHTML = `
+      <span class="drag-handle">⠿</span>
+      <div class="file-check" onclick="event.stopPropagation();toggleCheck(${f.id})" title="複数選択（まとめて並び替え・削除）">✓</div>
+      <div class="file-icon-wrap">📄</div>
+      <div class="file-info" onclick="toggleExpand(${f.id})" title="クリックでプレビューを展開">
+        <div class="file-name">${escapeHtml(f.name)}${f.annotated ? '<span class="badge-annotated">書込済</span>' : ''}</div>
+        <div class="file-meta">${formatBytes(f.size)} · ${pageInfo}</div>
+      </div>
+      <div class="file-actions">
+        <button class="icon-btn" onclick="event.stopPropagation();moveFile(${f.id},-1)" title="上へ">↑</button>
+        <button class="icon-btn" onclick="event.stopPropagation();moveFile(${f.id},1)" title="下へ">↓</button>
+        <button class="icon-btn" onclick="event.stopPropagation();openDraw(${f.id})" title="このPDFに書き込み">✏️</button>
+        <button class="icon-btn danger" onclick="event.stopPropagation();removeFile(${f.id})" title="削除">✕</button>
+        <span class="expand-chevron" onclick="toggleExpand(${f.id})">▼</span>
+      </div>`;
+    setupItemDrag(item, f.id);
+    block.appendChild(item);
+
+    // ── expanded preview ──
+    if (f.expanded) {
+      const area = document.createElement('div');
+      area.className = 'expand-area';
+      area.innerHTML = `
+        <div class="viewer-wrap">
+          <div class="viewer-nav">
+            <label>閲覧ページ：</label>
+            <button class="page-nav-btn" onclick="stepView(${f.id},-1)" ${f.viewPos <= 0 ? 'disabled' : ''}>‹</button>
+            <span class="page-info">${f.viewPos + 1} / ${f.pageOrder.length}</span>
+            <button class="page-nav-btn" onclick="stepView(${f.id},1)" ${f.viewPos >= f.pageOrder.length - 1 ? 'disabled' : ''}>›</button>
+            <span style="flex:1"></span>
+            <span class="info-badge">サムネイルをクリックすると表示ページが切替わります</span>
+          </div>
+          <div class="viewer-canvas-box"><canvas id="viewerCanvas-${f.id}"></canvas></div>
+        </div>
+        <div class="expand-toolbar">
+          <button class="btn btn-ghost btn-sm" onclick="selectAllPages(${f.id})">全選択</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearPageSel(${f.id})">解除</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetPageOrder(${f.id})">順序リセット</button>
+          <span style="flex:1"></span>
+          <input type="text" class="field-input" id="extractName-${f.id}" placeholder="抽出ファイル名（省略可）">
+          <button class="btn btn-primary btn-sm" onclick="extractSelected(${f.id},'download')">⬇ 選択ページをDL</button>
+          <button class="btn btn-ghost btn-sm" onclick="extractSelected(${f.id},'list')" title="選択ページを新しいPDFとして一覧に追加（そのまま結合に使えます）">＋ 選択ページを一覧に追加</button>
+          <button class="btn btn-ghost btn-sm" onclick="splitAllZip(${f.id})">✂ 全ページ個別分割(ZIP)</button>
+        </div>
+        <div class="thumbnails-grid" id="thumbGrid-${f.id}"></div>`;
+      block.appendChild(area);
+    }
+    list.appendChild(block);
+  });
+
+  // async: render expanded viewers & thumbs
+  files.filter(f => f.expanded).forEach(f => {
+    renderViewer(f);
+    renderThumbGrid(f);
+  });
+}
+
+function updateSelCount() {
+  const n = files.filter(f => f.checked).length;
+  document.getElementById('selCount').textContent = n ? ` — ${n}件選択中` : '';
 }
 
 // ────────────────────────────────────────
-// MERGE
+// 複数選択・並び替え
 // ────────────────────────────────────────
-let mergeFiles = [];
-const mergeDropzone = document.getElementById('mergeDropzone');
-mergeDropzone.addEventListener('dragover', e => { e.preventDefault(); mergeDropzone.classList.add('drag-over'); });
-mergeDropzone.addEventListener('dragleave', () => mergeDropzone.classList.remove('drag-over'));
-mergeDropzone.addEventListener('drop', async e => {
-  e.preventDefault(); mergeDropzone.classList.remove('drag-over');
-  await addMergeFiles([...e.dataTransfer.files].filter(f => f.name.endsWith('.pdf')));
-});
-document.getElementById('fileInputMerge').addEventListener('change', async e => {
-  await addMergeFiles([...e.target.files]); e.target.value = '';
-});
-async function addMergeFiles(files) {
-  for (const file of files) {
-    try { mergeFiles.push({ file, name: file.name, size: file.size, pageCount: await getPageCount(file) }); }
-    catch { toast(`${file.name} の読み込みに失敗しました`, 'error'); }
+function toggleCheck(id) { const f = entryById(id); f.checked = !f.checked; renderList(); }
+function toggleCheckAll() {
+  const allChecked = files.every(f => f.checked);
+  files.forEach(f => f.checked = !allChecked);
+  renderList();
+}
+function removeChecked() {
+  const n = files.filter(f => f.checked).length;
+  if (!n) { toast('削除するファイルを選択してください', 'error'); return; }
+  files = files.filter(f => !f.checked);
+  toast(`${n}件のファイルを削除しました`, 'info');
+  renderList();
+}
+function removeFile(id) { files = files.filter(f => f.id !== id); renderList(); }
+function moveFile(id, dir) {
+  const i = files.findIndex(f => f.id === id);
+  const j = i + dir;
+  if (j < 0 || j >= files.length) return;
+  [files[i], files[j]] = [files[j], files[i]];
+  renderList();
+}
+// 選択したファイル群を1段まとめて移動
+function moveChecked(dir) {
+  if (!files.some(f => f.checked)) { toast('移動するファイルを選択してください', 'error'); return; }
+  if (dir < 0) {
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].checked && i > 0 && !files[i - 1].checked) {
+        [files[i - 1], files[i]] = [files[i], files[i - 1]];
+      }
+    }
+  } else {
+    for (let i = files.length - 1; i >= 0; i--) {
+      if (files[i].checked && i < files.length - 1 && !files[i + 1].checked) {
+        [files[i + 1], files[i]] = [files[i], files[i + 1]];
+      }
+    }
   }
-  renderMergeList();
+  renderList();
 }
-function renderMergeList() {
-  const list = document.getElementById('mergeList');
-  const panel = document.getElementById('mergeFileList');
-  if (!mergeFiles.length) { panel.style.display = 'none'; return; }
-  panel.style.display = 'block'; list.innerHTML = '';
-  mergeFiles.forEach((item, i) => {
-    const div = document.createElement('div');
-    div.className = 'file-item'; div.draggable = true; div.dataset.index = i;
-    div.innerHTML = `<span class="drag-handle">⠿</span><div class="file-icon-wrap">📄</div><div class="file-info"><div class="file-name">${item.name}</div><div class="file-meta">${formatBytes(item.size)} · ${item.pageCount}ページ</div></div><div class="file-actions"><button class="icon-btn" onclick="moveMergeFile(${i},-1)">↑</button><button class="icon-btn" onclick="moveMergeFile(${i},1)">↓</button><button class="icon-btn danger" onclick="removeMergeFile(${i})">✕</button></div>`;
-    setupMergeItemDrag(div, i); list.appendChild(div);
+
+// ドラッグ：チェック済みアイテムをドラッグすると選択グループごと移動
+let dragFileId = null;
+function setupItemDrag(el, id) {
+  el.addEventListener('dragstart', e => {
+    dragFileId = id;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => el.classList.add('dragging'), 0);
   });
-}
-function setupMergeItemDrag(el, idx) {
-  el.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', idx); setTimeout(() => el.classList.add('dragging'), 0); });
-  el.addEventListener('dragend', () => el.classList.remove('dragging'));
-  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-target'); });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging');
+    document.querySelectorAll('#fileList .file-item').forEach(t => t.classList.remove('drag-target'));
+  });
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    document.querySelectorAll('#fileList .file-item').forEach(t => t.classList.remove('drag-target'));
+    el.classList.add('drag-target');
+  });
   el.addEventListener('dragleave', () => el.classList.remove('drag-target'));
   el.addEventListener('drop', e => {
     e.preventDefault(); el.classList.remove('drag-target');
-    const from = parseInt(e.dataTransfer.getData('text/plain')), to = parseInt(el.dataset.index);
-    if (from !== to) { const tmp = mergeFiles.splice(from, 1)[0]; mergeFiles.splice(to, 0, tmp); renderMergeList(); }
+    if (dragFileId === null) return;
+    dropMoveGroup(dragFileId, id);
+    dragFileId = null;
   });
 }
-function moveMergeFile(i, dir) { const j = i + dir; if (j < 0 || j >= mergeFiles.length) return; [mergeFiles[i], mergeFiles[j]] = [mergeFiles[j], mergeFiles[i]]; renderMergeList(); }
-function removeMergeFile(i) { mergeFiles.splice(i, 1); renderMergeList(); }
+function dropMoveGroup(dragId, targetId) {
+  if (dragId === targetId) return;
+  const dragged = entryById(dragId);
+  const target = entryById(targetId);
+  if (!dragged || !target) return;
+  // グループ = ドラッグ元がチェック済みなら全チェック済み、そうでなければ単体
+  const group = (dragged.checked && files.filter(f => f.checked).length > 1)
+    ? files.filter(f => f.checked)
+    : [dragged];
+  if (group.includes(target)) return; // グループ内へのドロップは無視
+  const origFrom = files.indexOf(dragged);
+  const origTo = files.indexOf(target);
+  const rest = files.filter(f => !group.includes(f));
+  let insertAt = rest.indexOf(target);
+  if (origFrom < origTo) insertAt += 1; // 下方向へは後ろに挿入
+  rest.splice(insertAt, 0, ...group);
+  files = rest;
+  renderList();
+  toast(group.length > 1 ? `${group.length}件をまとめて移動しました` : 'ファイルを移動しました', 'info');
+}
+
+// ────────────────────────────────────────
+// プレビュー展開（閲覧・ページ選択・ページ並び替え）
+// ────────────────────────────────────────
+function toggleExpand(id) {
+  const f = entryById(id);
+  f.expanded = !f.expanded;
+  renderList();
+}
+function stepView(id, dir) {
+  const f = entryById(id);
+  const np = f.viewPos + dir;
+  if (np < 0 || np >= f.pageOrder.length) return;
+  f.viewPos = np;
+  renderList();
+}
+async function renderViewer(f) {
+  const canvas = document.getElementById(`viewerCanvas-${f.id}`);
+  if (!canvas) return;
+  if (f.viewPos >= f.pageOrder.length) f.viewPos = 0;
+  const origPage = f.pageOrder[f.viewPos] + 1;
+  try { await renderPageToCanvas(f.doc, origPage, canvas, 1.3); }
+  catch { /* noop */ }
+}
+async function renderThumbGrid(f) {
+  const grid = document.getElementById(`thumbGrid-${f.id}`);
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let pos = 0; pos < f.pageOrder.length; pos++) {
+    const origIdx = f.pageOrder[pos];
+    const wrapper = document.createElement('div'); wrapper.className = 'thumb-wrapper';
+    const item = document.createElement('div');
+    item.className = 'thumb-item'
+      + (f.selPages.has(origIdx) ? ' selected' : '')
+      + (pos === f.viewPos ? ' viewing' : '');
+    item.draggable = true; item.dataset.pos = pos;
+    const check = document.createElement('div'); check.className = 'thumb-check'; check.innerHTML = '✓';
+    check.addEventListener('click', e => { e.stopPropagation(); togglePageSel(f.id, origIdx); });
+    const thumbBox = document.createElement('div'); thumbBox.className = 'thumb-canvas';
+    const label = document.createElement('div'); label.className = 'thumb-label';
+    label.textContent = `P.${pos + 1}（元: ${origIdx + 1}）`;
+    const numBadge = document.createElement('div'); numBadge.className = 'thumb-num'; numBadge.textContent = pos + 1;
+    item.appendChild(check); item.appendChild(thumbBox); item.appendChild(label);
+    wrapper.appendChild(item); wrapper.appendChild(numBadge); grid.appendChild(wrapper);
+
+    // クリック = ビューアに表示
+    item.addEventListener('click', () => { f.viewPos = pos; renderList(); });
+    setupPageDrag(item, f, pos);
+
+    // サムネイル（キャッシュ利用）
+    if (f.thumbCache.has(origIdx)) {
+      const img = document.createElement('img'); img.src = f.thumbCache.get(origIdx);
+      thumbBox.appendChild(img);
+    } else {
+      const canvas = document.createElement('canvas'); thumbBox.appendChild(canvas);
+      renderThumb(f, origIdx, canvas);
+    }
+  }
+}
+async function renderThumb(f, origIdx, canvasEl, scale = 0.28) {
+  try {
+    const page = await f.doc.getPage(origIdx + 1);
+    const vp = page.getViewport({ scale });
+    canvasEl.width = vp.width; canvasEl.height = vp.height;
+    await page.render({ canvasContext: canvasEl.getContext('2d'), viewport: vp }).promise;
+    try { f.thumbCache.set(origIdx, canvasEl.toDataURL()); } catch { /* noop */ }
+  } catch {
+    const ctx = canvasEl.getContext('2d');
+    ctx.fillStyle = '#f0e8e8'; ctx.fillRect(0, 0, 100, 136);
+  }
+}
+function togglePageSel(id, origIdx) {
+  const f = entryById(id);
+  if (f.selPages.has(origIdx)) f.selPages.delete(origIdx);
+  else f.selPages.add(origIdx);
+  renderThumbGrid(f);
+}
+function selectAllPages(id) {
+  const f = entryById(id);
+  f.pageOrder.forEach(idx => f.selPages.add(idx));
+  renderThumbGrid(f);
+}
+function clearPageSel(id) {
+  const f = entryById(id);
+  f.selPages.clear();
+  renderThumbGrid(f);
+}
+function resetPageOrder(id) {
+  const f = entryById(id);
+  f.pageOrder = Array.from({ length: f.pageCount }, (_, i) => i);
+  f.viewPos = 0;
+  renderList();
+  toast('ページ順序をリセットしました', 'info');
+}
+
+// ページ サムネイルのドラッグ並び替え（結合時にも反映）
+let dragPagePos = null, dragPageFileId = null;
+function setupPageDrag(el, f, pos) {
+  el.addEventListener('dragstart', e => {
+    e.stopPropagation();
+    dragPagePos = pos; dragPageFileId = f.id;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => el.classList.add('dragging'), 0);
+  });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging');
+    document.querySelectorAll(`#thumbGrid-${f.id} .thumb-item`).forEach(t => t.classList.remove('drag-target'));
+  });
+  el.addEventListener('dragover', e => {
+    if (dragPageFileId !== f.id) return;
+    e.preventDefault(); e.stopPropagation();
+    document.querySelectorAll(`#thumbGrid-${f.id} .thumb-item`).forEach(t => t.classList.remove('drag-target'));
+    el.classList.add('drag-target');
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-target'));
+  el.addEventListener('drop', e => {
+    if (dragPageFileId !== f.id) return;
+    e.preventDefault(); e.stopPropagation(); el.classList.remove('drag-target');
+    const from = dragPagePos, to = pos;
+    if (from !== null && from !== to) {
+      const tmp = f.pageOrder.splice(from, 1)[0];
+      f.pageOrder.splice(to, 0, tmp);
+      renderList();
+      toast('ページを移動しました（結合時にも反映されます）', 'info');
+    }
+    dragPagePos = null; dragPageFileId = null;
+  });
+}
+
+// ────────────────────────────────────────
+// 抽出（分割）
+// ────────────────────────────────────────
+async function extractSelected(id, mode) {
+  const f = entryById(id);
+  if (!f.selPages.size) { toast('ページを選択してください', 'error'); return; }
+  try {
+    const { PDFDocument } = PDFLib;
+    // 表示順（pageOrder）に沿って選択ページを抽出
+    const indices = f.pageOrder.filter(idx => f.selPages.has(idx));
+    const src = await PDFDocument.load(f.bytes.slice());
+    const out = await PDFDocument.create();
+    const copied = await out.copyPages(src, indices);
+    copied.forEach(p => out.addPage(p));
+    const outBytes = await out.save();
+
+    const rawName = (document.getElementById(`extractName-${id}`)?.value || '').trim();
+    const baseName = f.name.replace(/\.pdf$/i, '');
+    const pageLabel = indices.map(i => i + 1).join('-');
+    const fileName = rawName
+      ? sanitizeFileName(rawName) + '.pdf'
+      : `${baseName}_pages_${pageLabel}.pdf`;
+
+    if (mode === 'download') {
+      downloadBytes(outBytes, fileName);
+      toast('選択ページをダウンロードしました', 'success');
+    } else {
+      // 一覧に追加 → そのまま結合に使える
+      const bytes = new Uint8Array(outBytes);
+      const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+      files.push({
+        id: nextId++, name: fileName, size: bytes.length, bytes, doc,
+        pageCount: doc.numPages,
+        pageOrder: Array.from({ length: doc.numPages }, (_, i) => i),
+        selPages: new Set(), expanded: false, checked: false,
+        annotated: f.annotated, viewPos: 0, thumbCache: new Map()
+      });
+      renderList();
+      toast(`「${fileName}」を一覧に追加しました`, 'success');
+    }
+  } catch (e) { toast('抽出に失敗しました: ' + e.message, 'error'); }
+}
+async function splitAllZip(id) {
+  const f = entryById(id);
+  try {
+    const { PDFDocument } = PDFLib;
+    const src = await PDFDocument.load(f.bytes.slice());
+    const total = src.getPageCount();
+    const zip = new JSZip();
+    const baseName = f.name.replace(/\.pdf$/i, '');
+    const digits = String(total).length;
+    for (let i = 0; i < total; i++) {
+      const doc = await PDFDocument.create();
+      const [page] = await doc.copyPages(src, [i]); doc.addPage(page);
+      zip.file(`${baseName}_page${String(i + 1).padStart(digits, '0')}.pdf`, await doc.save());
+    }
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a'); a.href = url; a.download = `${baseName}_split.zip`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    toast(`${total}ページをZIPでダウンロードしました`, 'success');
+  } catch (e) { toast('分割に失敗しました: ' + e.message, 'error'); }
+}
+
+// ────────────────────────────────────────
+// 結合
+// ────────────────────────────────────────
+function mergeTargets() {
+  const checked = files.filter(f => f.checked);
+  return checked.length >= 2 ? checked : files;
+}
+function updateMergeName() {
+  const targets = mergeTargets();
+  const input = document.getElementById('mergeName');
+  const hint = document.getElementById('mergeHint');
+  if (!targets.length) { input.placeholder = ''; hint.textContent = ''; return; }
+  const topBase = targets[0].name.replace(/\.pdf$/i, '');
+  input.placeholder = topBase;
+  if (!mergeNameEdited) input.value = topBase;
+  const checkedCount = files.filter(f => f.checked).length;
+  hint.textContent = checkedCount >= 2
+    ? `☑ チェックした ${checkedCount} 件を上から順に結合します（未入力なら先頭ファイル名で保存）`
+    : `一覧の全 ${files.length} 件を上から順に結合します（未入力なら先頭ファイル名で保存）`;
+}
 async function mergePDFs() {
-  if (mergeFiles.length < 2) { toast('2つ以上のファイルを追加してください', 'error'); return; }
+  const targets = mergeTargets();
+  if (targets.length < 2) { toast('2つ以上のファイルを追加してください', 'error'); return; }
   const btn = document.getElementById('mergeBtn');
   btn.disabled = true; btn.innerHTML = '<span class="dots"><span></span><span></span><span></span></span> 処理中...';
   try {
     const { PDFDocument } = PDFLib;
     const merged = await PDFDocument.create();
-    for (const item of mergeFiles) {
-      const bytes = await item.file.arrayBuffer();
-      const doc = await PDFDocument.load(bytes);
-      const pages = await merged.copyPages(doc, doc.getPageIndices());
+    for (const item of targets) {
+      const doc = await PDFDocument.load(item.bytes.slice());
+      const pages = await merged.copyPages(doc, item.pageOrder);
       pages.forEach(p => merged.addPage(p));
     }
-    downloadBytes(await merged.save(), 'merged.pdf');
-    toast('結合完了！', 'success');
+    const raw = (document.getElementById('mergeName').value || '').trim();
+    const topBase = targets[0].name.replace(/\.pdf$/i, '');
+    const fileName = (raw ? sanitizeFileName(raw) : topBase) + '.pdf';
+    downloadBytes(await merged.save(), fileName);
+    lastMergedIds = targets.map(t => t.id);
+    const delBtn = document.getElementById('btnDeleteMerged');
+    delBtn.style.display = 'inline-flex';
+    delBtn.innerHTML = `🗑 結合前のファイルを一括削除（${lastMergedIds.length}件）`;
+    toast(`結合完了！ ${fileName}`, 'success');
   } catch (e) { toast('結合に失敗しました: ' + e.message, 'error'); }
   btn.disabled = false; btn.innerHTML = '⬇ 結合してダウンロード';
 }
-
-// ────────────────────────────────────────
-// SPLIT
-// ────────────────────────────────────────
-let splitFile = null, splitPdfDoc = null, splitPdfBytes = null, splitSelectedPages = new Set();
-const splitDropzone = document.getElementById('splitDropzone');
-splitDropzone.addEventListener('dragover', e => { e.preventDefault(); splitDropzone.classList.add('drag-over'); });
-splitDropzone.addEventListener('dragleave', () => splitDropzone.classList.remove('drag-over'));
-splitDropzone.addEventListener('drop', e => {
-  e.preventDefault(); splitDropzone.classList.remove('drag-over');
-  const file = [...e.dataTransfer.files].find(f => f.name.endsWith('.pdf'));
-  if (file) loadSplitFile(file);
-});
-document.getElementById('fileInputSplit').addEventListener('change', e => { if (e.target.files[0]) loadSplitFile(e.target.files[0]); e.target.value = ''; });
-async function loadSplitFile(file) {
-  splitFile = file; splitPdfBytes = await file.arrayBuffer();
-  splitPdfDoc = await pdfjsLib.getDocument({ data: splitPdfBytes.slice() }).promise;
-  document.getElementById('splitPanel').style.display = 'block';
-  document.getElementById('splitFileInfo').textContent = `📄 ${file.name}  ·  ${splitPdfDoc.numPages}ページ`;
-  updateSplitUI();
-}
-function updateSplitUI() {
-  const mode = document.getElementById('splitMode').value;
-  document.getElementById('rangeInput').style.display = mode === 'range' ? 'flex' : 'none';
-  const ta = document.getElementById('splitThumbs');
-  if (mode === 'visual') { ta.style.display = 'block'; renderSplitThumbs(); } else ta.style.display = 'none';
-}
-async function renderThumb(pdfDoc, pageNum, canvasEl, scale = 0.28) {
-  try {
-    const page = await pdfDoc.getPage(pageNum);
-    const vp = page.getViewport({ scale });
-    canvasEl.width = vp.width; canvasEl.height = vp.height;
-    await page.render({ canvasContext: canvasEl.getContext('2d'), viewport: vp }).promise;
-  } catch { const ctx = canvasEl.getContext('2d'); ctx.fillStyle = '#f0e8e8'; ctx.fillRect(0, 0, 110, 150); }
-}
-async function renderSplitThumbs() {
-  const grid = document.getElementById('splitThumbGrid');
-  grid.innerHTML = ''; splitSelectedPages.clear();
-  for (let i = 1; i <= splitPdfDoc.numPages; i++) {
-    const wrapper = document.createElement('div'); wrapper.className = 'thumb-wrapper';
-    const item = document.createElement('div'); item.className = 'thumb-item'; item.dataset.page = i;
-    const check = document.createElement('div'); check.className = 'thumb-check'; check.innerHTML = '✓';
-    const thumbBox = document.createElement('div'); thumbBox.className = 'thumb-canvas';
-    const canvas = document.createElement('canvas'); thumbBox.appendChild(canvas);
-    const label = document.createElement('div'); label.className = 'thumb-label'; label.textContent = `P.${i}`;
-    const numBadge = document.createElement('div'); numBadge.className = 'thumb-num'; numBadge.textContent = i;
-    item.appendChild(check); item.appendChild(thumbBox); item.appendChild(label);
-    wrapper.appendChild(item); wrapper.appendChild(numBadge); grid.appendChild(wrapper);
-    item.addEventListener('click', () => toggleSplitPage(i, item));
-    renderThumb(splitPdfDoc, i, canvas);
-  }
-}
-function toggleSplitPage(page, el) {
-  if (splitSelectedPages.has(page)) { splitSelectedPages.delete(page); el.classList.remove('selected'); }
-  else { splitSelectedPages.add(page); el.classList.add('selected'); }
-}
-function selectAllPages() { document.querySelectorAll('#splitThumbGrid .thumb-item').forEach(el => { splitSelectedPages.add(parseInt(el.dataset.page)); el.classList.add('selected'); }); }
-function clearPageSelection() { splitSelectedPages.clear(); document.querySelectorAll('#splitThumbGrid .thumb-item').forEach(el => el.classList.remove('selected')); }
-async function downloadSelected() {
-  if (!splitSelectedPages.size) { toast('ページを選択してください', 'error'); return; }
-  const pages = [...splitSelectedPages].sort((a, b) => a - b);
-  const rawName = (document.getElementById('visualFileName').value || '').trim();
-  const baseName = splitFile ? splitFile.name.replace(/\.pdf$/i, '') : 'split';
-  const fileName = rawName
-    ? sanitizeFileName(rawName) + '.pdf'
-    : `${baseName}_pages_${pages.join('-')}.pdf`;
-  const { PDFDocument } = PDFLib;
-  const src = await PDFDocument.load(splitPdfBytes);
-  const out = await PDFDocument.create();
-  const copied = await out.copyPages(src, pages.map(p => p - 1));
-  copied.forEach(p => out.addPage(p));
-  downloadBytes(await out.save(), fileName);
-  toast('ダウンロード完了！', 'success');
-}
-async function doSplit() {
-  if (!splitPdfDoc) { toast('ファイルを読み込んでください', 'error'); return; }
-  const btn = document.getElementById('splitBtn');
-  btn.disabled = true; btn.innerHTML = '<span class="dots"><span></span><span></span><span></span></span> 処理中...';
-  try {
-    const mode = document.getElementById('splitMode').value;
-    const { PDFDocument } = PDFLib;
-    const src = await PDFDocument.load(splitPdfBytes);
-    const total = src.getPageCount();
-    if (mode === 'all') {
-      const zip = new JSZip(), baseName = splitFile.name.replace(/\.pdf$/i, ''), digits = String(total).length;
-      for (let i = 0; i < total; i++) {
-        const doc = await PDFDocument.create();
-        const [page] = await doc.copyPages(src, [i]); doc.addPage(page);
-        zip.file(`${baseName}_page${String(i + 1).padStart(digits, '0')}.pdf`, await doc.save());
-      }
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a'); a.href = url; a.download = `${baseName}_split.zip`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-      toast(`${total}ページをZIPでダウンロードしました`, 'success');
-    } else if (mode === 'range') {
-      const range = document.getElementById('pageRange').value;
-      const indices = parseRange(range, total);
-      if (!indices.length) { toast('有効なページ範囲を入力してください', 'error'); btn.disabled = false; btn.innerHTML = '⬇ 分割＆ダウンロード'; return; }
-      const rawName = (document.getElementById('rangeFileName').value || '').trim();
-      const baseName = splitFile.name.replace(/\.pdf$/i, '');
-      const fileName = rawName
-        ? sanitizeFileName(rawName) + '.pdf'
-        : `${baseName}_${range.replace(/\s/g, '')}.pdf`;
-      const doc = await PDFDocument.create();
-      const copied = await doc.copyPages(src, indices.map(p => p - 1));
-      copied.forEach(p => doc.addPage(p));
-      downloadBytes(await doc.save(), fileName);
-      toast('分割完了！', 'success');
-    } else if (mode === 'visual') { await downloadSelected(); }
-  } catch (e) { toast('処理に失敗しました: ' + e.message, 'error'); }
-  btn.disabled = false; btn.innerHTML = '⬇ 分割＆ダウンロード';
-}
-function sanitizeFileName(name) {
-  return name.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_').slice(0, 100);
-}
-function parseRange(str, max) {
-  const pages = new Set();
-  str.split(',').forEach(part => {
-    part = part.trim();
-    if (part.includes('-')) { const [a, b] = part.split('-').map(Number); for (let i = a; i <= Math.min(b, max); i++) if (i >= 1) pages.add(i); }
-    else { const n = parseInt(part); if (n >= 1 && n <= max) pages.add(n); }
-  });
-  return [...pages].sort((a, b) => a - b);
+function deleteMergedFiles() {
+  if (!lastMergedIds.length) return;
+  const n = files.filter(f => lastMergedIds.includes(f.id)).length;
+  files = files.filter(f => !lastMergedIds.includes(f.id));
+  lastMergedIds = [];
+  document.getElementById('btnDeleteMerged').style.display = 'none';
+  mergeNameEdited = false;
+  renderList();
+  toast(`結合前のファイル ${n} 件を削除しました`, 'info');
 }
 
 // ────────────────────────────────────────
-// REORDER
+// DRAW ✏️（書き込み — 一覧のファイルに対して実行）
 // ────────────────────────────────────────
-let reorderFile = null, reorderPdfDoc = null, reorderPdfBytes = null, reorderPageOrder = [];
-const reorderDropzone = document.getElementById('reorderDropzone');
-reorderDropzone.addEventListener('dragover', e => { e.preventDefault(); reorderDropzone.classList.add('drag-over'); });
-reorderDropzone.addEventListener('dragleave', () => reorderDropzone.classList.remove('drag-over'));
-reorderDropzone.addEventListener('drop', e => {
-  e.preventDefault(); reorderDropzone.classList.remove('drag-over');
-  const file = [...e.dataTransfer.files].find(f => f.name.endsWith('.pdf'));
-  if (file) loadReorderFile(file);
-});
-document.getElementById('fileInputReorder').addEventListener('change', e => { if (e.target.files[0]) loadReorderFile(e.target.files[0]); e.target.value = ''; });
-async function loadReorderFile(file) {
-  reorderFile = file; reorderPdfBytes = await file.arrayBuffer();
-  reorderPdfDoc = await pdfjsLib.getDocument({ data: reorderPdfBytes.slice() }).promise;
-  reorderPageOrder = Array.from({ length: reorderPdfDoc.numPages }, (_, i) => i);
-  document.getElementById('reorderPanel').style.display = 'block';
-  renderReorderThumbs();
-}
-async function renderReorderThumbs() {
-  const grid = document.getElementById('reorderThumbGrid'); grid.innerHTML = '';
-  for (let pos = 0; pos < reorderPageOrder.length; pos++) {
-    const origPage = reorderPageOrder[pos] + 1;
-    const item = document.createElement('div'); item.className = 'thumb-item'; item.draggable = true; item.dataset.pos = pos;
-    const thumbBox = document.createElement('div'); thumbBox.className = 'thumb-canvas';
-    const canvas = document.createElement('canvas'); thumbBox.appendChild(canvas);
-    const label = document.createElement('div'); label.className = 'thumb-label'; label.textContent = `P.${pos + 1}（元: ${origPage}）`;
-    item.appendChild(thumbBox); item.appendChild(label); grid.appendChild(item);
-    renderThumb(reorderPdfDoc, origPage, canvas); setupReorderDrag(item, pos);
-  }
-}
-let dragSrcPos = null;
-function setupReorderDrag(el, pos) {
-  el.addEventListener('dragstart', e => { dragSrcPos = pos; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => el.classList.add('dragging'), 0); });
-  el.addEventListener('dragend', () => { el.classList.remove('dragging'); document.querySelectorAll('#reorderThumbGrid .thumb-item').forEach(t => t.classList.remove('drag-target')); });
-  el.addEventListener('dragover', e => { e.preventDefault(); document.querySelectorAll('#reorderThumbGrid .thumb-item').forEach(t => t.classList.remove('drag-target')); el.classList.add('drag-target'); });
-  el.addEventListener('dragleave', () => el.classList.remove('drag-target'));
-  el.addEventListener('drop', e => {
-    e.preventDefault(); el.classList.remove('drag-target');
-    const from = dragSrcPos, to = parseInt(el.dataset.pos);
-    if (from !== null && from !== to) { const tmp = reorderPageOrder.splice(from, 1)[0]; reorderPageOrder.splice(to, 0, tmp); renderReorderThumbs(); toast('ページを移動しました', 'info'); }
-    dragSrcPos = null;
-  });
-}
-function resetPageOrder() { if (!reorderPdfDoc) return; reorderPageOrder = Array.from({ length: reorderPdfDoc.numPages }, (_, i) => i); renderReorderThumbs(); toast('順序をリセットしました', 'info'); }
-async function saveReordered() {
-  if (!reorderPdfDoc) return;
-  const { PDFDocument } = PDFLib;
-  const src = await PDFDocument.load(reorderPdfBytes);
-  const out = await PDFDocument.create();
-  const copied = await out.copyPages(src, reorderPageOrder);
-  copied.forEach(p => out.addPage(p));
-  downloadBytes(await out.save(), reorderFile.name.replace('.pdf', '') + '_reordered.pdf');
-  toast('保存してダウンロードしました！', 'success');
-}
-
-// ────────────────────────────────────────
-// DRAW  ✏️
-// ────────────────────────────────────────
-let drawFile = null;
-let drawPdfJsDoc = null;   // pdf.js (rendering)
-let drawPdfBytes = null;   // raw bytes for pdf-lib
+let drawEntry = null;      // files内のエントリ
+let drawPdfJsDoc = null;
 let drawCurrentPage = 1;
 let drawTotalPages = 1;
 let drawScale = 1.4;
-let drawVp = null;         // current pdf.js viewport
+let drawVp = null;
 
-// Drawing state
 let currentTool = 'line';
 let currentColor = '#e05a7a';
 let currentStroke = 1.5;
 let fillEnabled = false;
 
-// Per-page shape storage: Map<pageNum, shape[]>
-// shape = {type, color, stroke, fill, ...coords}
 const pageShapes = new Map();
-
-// Undo/redo stacks per page
-const undoStacks = new Map(); // Map<pageNum, shape[][]>
+const undoStacks = new Map();
 const redoStacks = new Map();
 
-// Polygon in-progress
 let polygonPoints = [];
 let isDrawing = false;
 let startX, startY;
@@ -828,25 +985,24 @@ const drawCanvas = document.getElementById('drawCanvas');
 const ctx = drawCanvas.getContext('2d');
 const snapDot = document.getElementById('snapDot');
 
-// ── Drop zone ──
-const drawDropzone = document.getElementById('drawDropzone');
-drawDropzone.addEventListener('dragover', e => { e.preventDefault(); drawDropzone.classList.add('drag-over'); });
-drawDropzone.addEventListener('dragleave', () => drawDropzone.classList.remove('drag-over'));
-drawDropzone.addEventListener('drop', e => {
-  e.preventDefault(); drawDropzone.classList.remove('drag-over');
-  const file = [...e.dataTransfer.files].find(f => f.name.endsWith('.pdf'));
-  if (file) loadDrawFile(file);
-});
-document.getElementById('fileInputDraw').addEventListener('change', e => { if (e.target.files[0]) loadDrawFile(e.target.files[0]); e.target.value = ''; });
-
-async function loadDrawFile(file) {
-  drawFile = file;
-  drawPdfBytes = await file.arrayBuffer();
-  drawPdfJsDoc = await pdfjsLib.getDocument({ data: drawPdfBytes.slice() }).promise;
-  drawTotalPages = drawPdfJsDoc.numPages;
+async function openDraw(id) {
+  const f = entryById(id);
+  if (!f) return;
+  drawEntry = f;
+  drawPdfJsDoc = f.doc;
+  drawTotalPages = f.pageCount;
   drawCurrentPage = 1;
+  pageShapes.clear(); undoStacks.clear(); redoStacks.clear();
+  polygonPoints = []; isDrawing = false;
+  document.getElementById('drawFileName').textContent = f.name;
   document.getElementById('drawWorkspace').style.display = 'block';
   await renderDrawPage();
+  document.getElementById('drawWorkspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function closeDraw() {
+  document.getElementById('drawWorkspace').style.display = 'none';
+  drawEntry = null;
+  pageShapes.clear(); undoStacks.clear(); redoStacks.clear();
 }
 
 async function renderDrawPage() {
@@ -876,26 +1032,22 @@ function setTool(tool) {
   document.getElementById('tool-' + tool).classList.add('active');
   drawCanvas.style.cursor = tool === 'select' ? 'default' : 'crosshair';
 }
-
 function setColor(el) {
   currentColor = el.dataset.color;
   document.querySelectorAll('#colorSwatches .swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('customColor').value = currentColor;
 }
-
 function setCustomColor(val) {
   currentColor = val;
   document.querySelectorAll('#colorSwatches .swatch').forEach(s => s.classList.remove('active'));
 }
-
 function setStroke(w) {
   currentStroke = w;
-  document.querySelectorAll('.stroke-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tool-palette .stroke-btn').forEach(b => b.classList.remove('active'));
   const map = { 1.5: 'sw-1', 3: 'sw-2', 5: 'sw-3' };
   if (map[w]) document.getElementById(map[w]).classList.add('active');
 }
-
 function toggleFill() {
   fillEnabled = !fillEnabled;
   const btn = document.getElementById('fillToggle');
@@ -936,22 +1088,16 @@ function applySelProp(key, val) {
   getShapes(drawCurrentPage)[selectedIdx][key] = val;
   redrawAllShapes();
 }
-
-// Sync the sel-props panel UI to reflect the selected shape's current values
 function syncSelProps(s) {
-  // color swatches
   const hex = s.color || '#e05a7a';
   document.querySelectorAll('#selColorSwatches .swatch').forEach(sw => {
     sw.classList.toggle('active', sw.dataset.color === hex);
   });
   document.getElementById('selCustomColor').value = hex;
-  // stroke
   document.querySelectorAll('#selProps .stroke-btn').forEach(b => b.classList.remove('active'));
   const strokeMap = { 1.5: 'sel-sw-1', 3: 'sel-sw-2', 5: 'sel-sw-3' };
   if (strokeMap[s.stroke]) document.getElementById(strokeMap[s.stroke]).classList.add('active');
-  // fill
   syncSelFillBtn(!!s.fill);
-  // show panel
   document.getElementById('selProps').style.display = 'flex';
 }
 function syncSelFillBtn(filled) {
@@ -972,14 +1118,12 @@ function getShapes(page) {
 }
 function pushShape(shape) {
   const shapes = getShapes(drawCurrentPage);
-  // save undo snapshot
   if (!undoStacks.has(drawCurrentPage)) undoStacks.set(drawCurrentPage, []);
   undoStacks.get(drawCurrentPage).push([...shapes]);
-  redoStacks.set(drawCurrentPage, []); // clear redo
+  redoStacks.set(drawCurrentPage, []);
   shapes.push(shape);
   redrawAllShapes();
 }
-
 function undoDraw() {
   const stack = undoStacks.get(drawCurrentPage);
   if (!stack || !stack.length) { toast('これ以上元に戻せません', 'info'); return; }
@@ -1012,7 +1156,8 @@ function clearDrawPage() {
 
 // keyboard shortcuts
 document.addEventListener('keydown', e => {
-  if (document.getElementById('panel-draw').classList.contains('active')) {
+  if (document.getElementById('drawWorkspace').style.display !== 'none' && drawEntry) {
+    if (e.target.tagName === 'INPUT') return;
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoDraw(); }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redoDraw(); }
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIdx >= 0 && currentTool === 'select') { e.preventDefault(); deleteSelected(); }
@@ -1028,9 +1173,7 @@ function getCanvasPos(e) {
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
   return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
 }
-
-const SNAP_DIST = 16; // px — distance to close polygon
-
+const SNAP_DIST = 16;
 function isNearStart(x, y) {
   if (polygonPoints.length < 3) return false;
   const dx = x - polygonPoints[0].x, dy = y - polygonPoints[0].y;
@@ -1038,10 +1181,10 @@ function isNearStart(x, y) {
 }
 
 // ── Selection state ──
-let selectedIdx = -1;    // index in pageShapes
-let selDragMode = null;  // 'move' | 'tl'|'tr'|'bl'|'br'
-let selDragStart = null; // {x,y}
-let selShapeSnap = null; // deep-copy of shape at drag start
+let selectedIdx = -1;
+let selDragMode = null;
+let selDragStart = null;
+let selShapeSnap = null;
 
 const selBox = document.getElementById('selBox');
 const selDel = document.getElementById('selDel');
@@ -1061,7 +1204,6 @@ function deleteSelected() {
   hideSelBox();
   redrawAllShapes();
 }
-
 function saveUndo() {
   const shapes = getShapes(drawCurrentPage);
   if (!undoStacks.has(drawCurrentPage)) undoStacks.set(drawCurrentPage, []);
@@ -1077,7 +1219,6 @@ function shapeBBox(s) {
   }
   return { x1: Math.min(s.x1, s.x2), y1: Math.min(s.y1, s.y2), x2: Math.max(s.x1, s.x2), y2: Math.max(s.y1, s.y2) };
 }
-
 function pointInShape(s, x, y) {
   const b = shapeBBox(s);
   const pad = Math.max(6, s.stroke * 2);
@@ -1091,22 +1232,16 @@ function showSelBox(s) {
   const sx = rect.width / drawCanvas.width;
   const sy = rect.height / drawCanvas.height;
   const pad = 6;
-  const left = (b.x1 - pad) * sx;
-  const top  = (b.y1 - pad) * sy;
-  const w    = (b.x2 - b.x1 + pad * 2) * sx;
-  const h    = (b.y2 - b.y1 + pad * 2) * sy;
   selBox.style.display = 'block';
-  selBox.style.left   = left + 'px';
-  selBox.style.top    = top  + 'px';
-  selBox.style.width  = w + 'px';
-  selBox.style.height = h + 'px';
-  // handles at corners
+  selBox.style.left = (b.x1 - pad) * sx + 'px';
+  selBox.style.top = (b.y1 - pad) * sy + 'px';
+  selBox.style.width = (b.x2 - b.x1 + pad * 2) * sx + 'px';
+  selBox.style.height = (b.y2 - b.y1 + pad * 2) * sy + 'px';
   document.getElementById('sh-tl').style.cssText += `left:0;top:0;`;
   document.getElementById('sh-tr').style.cssText += `left:100%;top:0;`;
   document.getElementById('sh-bl').style.cssText += `left:0;top:100%;`;
   document.getElementById('sh-br').style.cssText += `left:100%;top:100%;`;
 }
-
 function hideSelBox() {
   selBox.style.display = 'none';
   selectedIdx = -1;
@@ -1116,7 +1251,6 @@ function hideSelBox() {
 // ── Select tool: hit test ──
 function trySelect(x, y) {
   const shapes = getShapes(drawCurrentPage);
-  // test in reverse order (topmost first)
   for (let i = shapes.length - 1; i >= 0; i--) {
     if (pointInShape(shapes[i], x, y)) {
       selectedIdx = i;
@@ -1129,7 +1263,7 @@ function trySelect(x, y) {
   return false;
 }
 
-// ── Move drag ──
+// ── Move / Resize drag ──
 function startSelMove(e) {
   if (selectedIdx < 0) return;
   const pos = getCanvasPos(e);
@@ -1139,8 +1273,6 @@ function startSelMove(e) {
   window.addEventListener('mousemove', onSelDrag);
   window.addEventListener('mouseup', onSelDragEnd);
 }
-
-// ── Resize drag ──
 function startSelResize(e, dir) {
   if (selectedIdx < 0) return;
   const pos = getCanvasPos(e);
@@ -1150,7 +1282,6 @@ function startSelResize(e, dir) {
   window.addEventListener('mousemove', onSelDrag);
   window.addEventListener('mouseup', onSelDragEnd);
 }
-
 function onSelDrag(e) {
   if (!selDragMode || selectedIdx < 0) return;
   const pos = getCanvasPos(e);
@@ -1168,13 +1299,11 @@ function onSelDrag(e) {
       s.x2 = snap.x2 + dx; s.y2 = snap.y2 + dy;
     }
   } else {
-    // Resize: move one corner, keep opposite fixed
     if (snap.type === 'polygon') {
-      // scale polygon around its bbox
       const b = shapeBBox(snap);
       const bw = b.x2 - b.x1 || 1, bh = b.y2 - b.y1 || 1;
       let nx1 = b.x1, ny1 = b.y1, nx2 = b.x2, ny2 = b.y2;
-      if (selDragMode === 'tl') { nx1 = snap.x1 !== undefined ? snap.x1 + dx : b.x1 + dx; ny1 = b.y1 + dy; }
+      if (selDragMode === 'tl') { nx1 = b.x1 + dx; ny1 = b.y1 + dy; }
       else if (selDragMode === 'tr') { nx2 = b.x2 + dx; ny1 = b.y1 + dy; }
       else if (selDragMode === 'bl') { nx1 = b.x1 + dx; ny2 = b.y2 + dy; }
       else if (selDragMode === 'br') { nx2 = b.x2 + dx; ny2 = b.y2 + dy; }
@@ -1184,7 +1313,7 @@ function onSelDrag(e) {
         y: ny1 + (p.y - b.y1) * scy
       }));
     } else {
-      if (selDragMode === 'tl')      { s.x1 = snap.x1 + dx; s.y1 = snap.y1 + dy; }
+      if (selDragMode === 'tl') { s.x1 = snap.x1 + dx; s.y1 = snap.y1 + dy; }
       else if (selDragMode === 'tr') { s.x2 = snap.x2 + dx; s.y1 = snap.y1 + dy; }
       else if (selDragMode === 'bl') { s.x1 = snap.x1 + dx; s.y2 = snap.y2 + dy; }
       else if (selDragMode === 'br') { s.x2 = snap.x2 + dx; s.y2 = snap.y2 + dy; }
@@ -1193,15 +1322,8 @@ function onSelDrag(e) {
   redrawAllShapes();
   showSelBox(s);
 }
-
-function onSelDragEnd(e) {
-  if (selDragMode) {
-    saveUndo();
-    // put current state into undo properly
-    const shapes = getShapes(drawCurrentPage);
-    const stack = undoStacks.get(drawCurrentPage);
-    // already saved above – just clean up
-  }
+function onSelDragEnd() {
+  if (selDragMode) saveUndo();
   selDragMode = null; selDragStart = null; selShapeSnap = null;
   window.removeEventListener('mousemove', onSelDrag);
   window.removeEventListener('mouseup', onSelDragEnd);
@@ -1217,12 +1339,7 @@ drawCanvas.addEventListener('touchend', e => { e.preventDefault(); onDrawEnd(e);
 
 function onDrawStart(e) {
   const { x, y } = getCanvasPos(e);
-
-  if (currentTool === 'select') {
-    trySelect(x, y);
-    return;
-  }
-
+  if (currentTool === 'select') { trySelect(x, y); return; }
   if (currentTool === 'polygon') {
     if (polygonPoints.length > 0 && isNearStart(x, y)) {
       finishPolygon();
@@ -1233,24 +1350,18 @@ function onDrawStart(e) {
     }
     return;
   }
-
   isDrawing = true;
   startX = x; startY = y;
 }
-
 function onDrawMove(e) {
   const { x, y } = getCanvasPos(e);
-
   if (currentTool === 'select') {
-    // change cursor when hovering over a shape
     const shapes = getShapes(drawCurrentPage);
     const hit = shapes.some(s => pointInShape(s, x, y));
     drawCanvas.style.cursor = hit ? 'move' : 'default';
     return;
   }
-
   if (currentTool === 'polygon') {
-    // show snap indicator
     if (polygonPoints.length >= 3 && isNearStart(x, y)) {
       snapDot.style.display = 'block';
       const rect = drawCanvas.getBoundingClientRect();
@@ -1266,12 +1377,10 @@ function onDrawMove(e) {
     }
     return;
   }
-
   if (!isDrawing) return;
   redrawAllShapes();
   drawPreview(startX, startY, x, y);
 }
-
 function onDrawEnd(e) {
   if (currentTool === 'polygon') return;
   if (!isDrawing) return;
@@ -1279,15 +1388,12 @@ function onDrawEnd(e) {
   const { x, y } = e.type === 'touchend'
     ? { x: (e.changedTouches[0].clientX - drawCanvas.getBoundingClientRect().left) * (drawCanvas.width / drawCanvas.getBoundingClientRect().width), y: (e.changedTouches[0].clientY - drawCanvas.getBoundingClientRect().top) * (drawCanvas.height / drawCanvas.getBoundingClientRect().height) }
     : getCanvasPos(e);
-
-  if (Math.abs(x - startX) < 2 && Math.abs(y - startY) < 2) return; // too small — ignore
-
+  if (Math.abs(x - startX) < 2 && Math.abs(y - startY) < 2) return;
   pushShape({
     type: currentTool, color: currentColor, stroke: currentStroke, fill: fillEnabled,
     x1: startX, y1: startY, x2: x, y2: y
   });
 }
-
 function finishPolygon() {
   if (polygonPoints.length < 3) { polygonPoints = []; redrawAllShapes(); return; }
   pushShape({
@@ -1305,9 +1411,7 @@ function redrawAllShapes() {
   shapes.forEach((s, i) => {
     drawShape(ctx, s);
     if (i === selectedIdx && currentTool === 'select') {
-      // highlight selected shape
       ctx.save();
-      const b = shapeBBox(s);
       ctx.strokeStyle = 'rgba(224,90,122,0.5)';
       ctx.lineWidth = s.stroke + 4;
       ctx.setLineDash([]);
@@ -1315,17 +1419,14 @@ function redrawAllShapes() {
       ctx.restore();
     }
   });
-  // refresh sel box
   if (selectedIdx >= 0 && selectedIdx < shapes.length && currentTool === 'select') {
     showSelBox(shapes[selectedIdx]);
   }
 }
-
 function drawPreview(x1, y1, x2, y2) {
   const s = { type: currentTool, color: currentColor, stroke: currentStroke, fill: fillEnabled, x1, y1, x2, y2 };
   drawShape(ctx, s);
 }
-
 function drawPolygonInProgress(mouseX, mouseY) {
   ctx.save();
   ctx.strokeStyle = currentColor;
@@ -1338,7 +1439,6 @@ function drawPolygonInProgress(mouseX, mouseY) {
   for (let i = 1; i < polygonPoints.length; i++) ctx.lineTo(polygonPoints[i].x, polygonPoints[i].y);
   if (mouseX !== undefined) ctx.lineTo(mouseX, mouseY);
   ctx.stroke();
-  // dots at vertices
   polygonPoints.forEach((pt, i) => {
     ctx.beginPath();
     ctx.arc(pt.x, pt.y, i === 0 ? 5 : 3, 0, Math.PI * 2);
@@ -1347,7 +1447,6 @@ function drawPolygonInProgress(mouseX, mouseY) {
   });
   ctx.restore();
 }
-
 function drawShape(ctx, s) {
   ctx.save();
   ctx.strokeStyle = s.color;
@@ -1355,28 +1454,23 @@ function drawShape(ctx, s) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.setLineDash([]);
-
-  const fillColor = s.color + '33'; // 20% opacity fill
+  const fillColor = s.color + '33';
 
   if (s.type === 'line') {
     ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
-
   } else if (s.type === 'arrow') {
     const dx = s.x2 - s.x1, dy = s.y2 - s.y1;
     const len = Math.sqrt(dx * dx + dy * dy);
     if (len < 1) { ctx.restore(); return; }
-    const ux = dx / len, uy = dy / len;
     const headLen = Math.max(12, s.stroke * 5);
     const angle = Math.PI / 7;
     ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
-    // arrowhead
     ctx.beginPath();
     ctx.moveTo(s.x2, s.y2);
     ctx.lineTo(s.x2 - headLen * Math.cos(Math.atan2(dy, dx) - angle), s.y2 - headLen * Math.sin(Math.atan2(dy, dx) - angle));
     ctx.moveTo(s.x2, s.y2);
     ctx.lineTo(s.x2 - headLen * Math.cos(Math.atan2(dy, dx) + angle), s.y2 - headLen * Math.sin(Math.atan2(dy, dx) + angle));
     ctx.stroke();
-
   } else if (s.type === 'polygon') {
     if (!s.points || s.points.length < 2) { ctx.restore(); return; }
     ctx.beginPath();
@@ -1385,121 +1479,92 @@ function drawShape(ctx, s) {
     ctx.closePath();
     if (s.fill) { ctx.fillStyle = fillColor; ctx.fill(); }
     ctx.stroke();
-
   } else if (s.type === 'rect') {
     const x = Math.min(s.x1, s.x2), y = Math.min(s.y1, s.y2);
     const w = Math.abs(s.x2 - s.x1), h = Math.abs(s.y2 - s.y1);
     if (s.fill) { ctx.fillStyle = fillColor; ctx.fillRect(x, y, w, h); }
     ctx.strokeRect(x, y, w, h);
-
   } else if (s.type === 'circle') {
     const cx = (s.x1 + s.x2) / 2, cy = (s.y1 + s.y2) / 2;
     const rx = Math.abs(s.x2 - s.x1) / 2, ry = Math.abs(s.y2 - s.y1) / 2;
     ctx.beginPath(); ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
     if (s.fill) { ctx.fillStyle = fillColor; ctx.fill(); }
     ctx.stroke();
-
   } else if (s.type === 'triangle') {
     const mx = (s.x1 + s.x2) / 2;
     ctx.beginPath(); ctx.moveTo(mx, s.y1); ctx.lineTo(s.x2, s.y2); ctx.lineTo(s.x1, s.y2); ctx.closePath();
     if (s.fill) { ctx.fillStyle = fillColor; ctx.fill(); }
     ctx.stroke();
   }
-
   ctx.restore();
 }
 
-// ── Save drawn PDF ──
-async function saveDrawnPdf() {
-  if (!drawFile) { toast('ファイルを読み込んでください', 'error'); return; }
-  const btn = document.querySelector('#panel-draw .btn-success');
-  btn.disabled = true; btn.innerHTML = '<span class="dots"><span></span><span></span><span></span></span> 書き出し中...';
-  try {
-    const { PDFDocument, rgb, LineCapStyle } = PDFLib;
-    const pdfDoc = await PDFDocument.load(drawPdfBytes);
+// ── 書き込みPDFのバイト列を生成（共通処理） ──
+async function buildAnnotatedBytes() {
+  const { PDFDocument, rgb, LineCapStyle } = PDFLib;
+  const pdfDoc = await PDFDocument.load(drawEntry.bytes.slice());
 
-    for (const [pageNum, shapes] of pageShapes.entries()) {
-      if (!shapes.length) continue;
-      const page = pdfDoc.getPage(pageNum - 1);
-      const { width: pdfW, height: pdfH } = page.getSize();
+  for (const [pageNum, shapes] of pageShapes.entries()) {
+    if (!shapes.length) continue;
+    const page = pdfDoc.getPage(pageNum - 1);
+    const { width: pdfW, height: pdfH } = page.getSize();
 
-      // We rendered at drawScale; canvas size = pdfPt * drawScale
-      const scaleX = pdfW / (drawVp ? drawVp.width / drawScale * drawScale : pdfW);
-      const scaleY = pdfH / (drawVp ? drawVp.height / drawScale * drawScale : pdfH);
+    const tmpCanvas = document.createElement('canvas');
+    await renderPageToCanvas(drawPdfJsDoc, pageNum, tmpCanvas, drawScale);
+    const sx = pdfW / tmpCanvas.width, sy = pdfH / tmpCanvas.height;
 
-      // Re-render that page to get correct scale mapping
-      const tmpCanvas = document.createElement('canvas');
-      const tmpVp = await renderPageToCanvas(drawPdfJsDoc, pageNum, tmpCanvas, drawScale);
-      const canvasW = tmpCanvas.width, canvasH = tmpCanvas.height;
-      const sx = pdfW / canvasW, sy = pdfH / canvasH;
+    const hexToRgb = hex => {
+      const r = parseInt(hex.slice(1, 3), 16) / 255;
+      const g = parseInt(hex.slice(3, 5), 16) / 255;
+      const b = parseInt(hex.slice(5, 7), 16) / 255;
+      return rgb(r, g, b);
+    };
 
-      const hexToRgb = hex => {
-        const r = parseInt(hex.slice(1, 3), 16) / 255;
-        const g = parseInt(hex.slice(3, 5), 16) / 255;
-        const b = parseInt(hex.slice(5, 7), 16) / 255;
-        return rgb(r, g, b);
-      };
+    for (const s of shapes) {
+      const c = hexToRgb(s.color);
+      const sw = s.stroke;
+      const fillC = s.fill ? hexToRgb(s.color) : null;
+      const fillOp = 0.2;
+      const fy = v => pdfH - v * sy;
+      const fx = v => v * sx;
 
-      for (const s of shapes) {
-        const c = hexToRgb(s.color);
-        const sw = s.stroke;
-        const fillC = s.fill ? hexToRgb(s.color) : null;
-        const fillOp = 0.2;
-
-        // PDF coords: y is flipped
-        const fy = v => pdfH - v * sy;
-        const fx = v => v * sx;
-
-        if (s.type === 'line') {
-          page.drawLine({ start: { x: fx(s.x1), y: fy(s.y1) }, end: { x: fx(s.x2), y: fy(s.y2) }, thickness: sw, color: c, lineCap: LineCapStyle.Round });
-
-        } else if (s.type === 'arrow') {
-          page.drawLine({ start: { x: fx(s.x1), y: fy(s.y1) }, end: { x: fx(s.x2), y: fy(s.y2) }, thickness: sw, color: c, lineCap: LineCapStyle.Round });
-          const dx = fx(s.x2) - fx(s.x1), dy = fy(s.y2) - fy(s.y1);
-          const angle = Math.atan2(dy, dx);
-          const headLen = Math.max(12, sw * 5);
-          const spread = Math.PI / 7;
-          page.drawLine({ start: { x: fx(s.x2), y: fy(s.y2) }, end: { x: fx(s.x2) - headLen * Math.cos(angle - spread), y: fy(s.y2) - headLen * Math.sin(angle - spread) }, thickness: sw, color: c });
-          page.drawLine({ start: { x: fx(s.x2), y: fy(s.y2) }, end: { x: fx(s.x2) - headLen * Math.cos(angle + spread), y: fy(s.y2) - headLen * Math.sin(angle + spread) }, thickness: sw, color: c });
-
-        } else if (s.type === 'rect') {
-          const x = Math.min(fx(s.x1), fx(s.x2));
-          const y = Math.min(fy(s.y1), fy(s.y2));
-          const w = Math.abs(fx(s.x2) - fx(s.x1));
-          const h = Math.abs(fy(s.y2) - fy(s.y1));
-          if (fillC) page.drawRectangle({ x, y, width: w, height: h, color: fillC, opacity: fillOp });
-          page.drawRectangle({ x, y, width: w, height: h, borderColor: c, borderWidth: sw, color: undefined });
-
-        } else if (s.type === 'circle') {
-          const cx = (fx(s.x1) + fx(s.x2)) / 2;
-          const cy = (fy(s.y1) + fy(s.y2)) / 2;
-          const rx = Math.abs(fx(s.x2) - fx(s.x1)) / 2;
-          const ry = Math.abs(fy(s.y2) - fy(s.y1)) / 2;
-          if (fillC) page.drawEllipse({ x: cx, y: cy, xScale: Math.max(rx, 1), yScale: Math.max(ry, 1), color: fillC, opacity: fillOp });
-          page.drawEllipse({ x: cx, y: cy, xScale: Math.max(rx, 1), yScale: Math.max(ry, 1), borderColor: c, borderWidth: sw, color: undefined });
-
-        } else if (s.type === 'triangle') {
-          const mx = (fx(s.x1) + fx(s.x2)) / 2;
-          const pts = [{ x: mx, y: fy(s.y1) }, { x: fx(s.x2), y: fy(s.y2) }, { x: fx(s.x1), y: fy(s.y2) }];
-          drawPdfPolygon(page, pts, c, sw, fillC, fillOp);
-
-        } else if (s.type === 'polygon') {
-          const pts = s.points.map(p => ({ x: fx(p.x), y: fy(p.y) }));
-          drawPdfPolygon(page, pts, c, sw, fillC, fillOp);
-        }
+      if (s.type === 'line') {
+        page.drawLine({ start: { x: fx(s.x1), y: fy(s.y1) }, end: { x: fx(s.x2), y: fy(s.y2) }, thickness: sw, color: c, lineCap: LineCapStyle.Round });
+      } else if (s.type === 'arrow') {
+        page.drawLine({ start: { x: fx(s.x1), y: fy(s.y1) }, end: { x: fx(s.x2), y: fy(s.y2) }, thickness: sw, color: c, lineCap: LineCapStyle.Round });
+        const dx = fx(s.x2) - fx(s.x1), dy = fy(s.y2) - fy(s.y1);
+        const angle = Math.atan2(dy, dx);
+        const headLen = Math.max(12, sw * 5);
+        const spread = Math.PI / 7;
+        page.drawLine({ start: { x: fx(s.x2), y: fy(s.y2) }, end: { x: fx(s.x2) - headLen * Math.cos(angle - spread), y: fy(s.y2) - headLen * Math.sin(angle - spread) }, thickness: sw, color: c });
+        page.drawLine({ start: { x: fx(s.x2), y: fy(s.y2) }, end: { x: fx(s.x2) - headLen * Math.cos(angle + spread), y: fy(s.y2) - headLen * Math.sin(angle + spread) }, thickness: sw, color: c });
+      } else if (s.type === 'rect') {
+        const x = Math.min(fx(s.x1), fx(s.x2));
+        const y = Math.min(fy(s.y1), fy(s.y2));
+        const w = Math.abs(fx(s.x2) - fx(s.x1));
+        const h = Math.abs(fy(s.y2) - fy(s.y1));
+        if (fillC) page.drawRectangle({ x, y, width: w, height: h, color: fillC, opacity: fillOp });
+        page.drawRectangle({ x, y, width: w, height: h, borderColor: c, borderWidth: sw, color: undefined });
+      } else if (s.type === 'circle') {
+        const cx = (fx(s.x1) + fx(s.x2)) / 2;
+        const cy = (fy(s.y1) + fy(s.y2)) / 2;
+        const rx = Math.abs(fx(s.x2) - fx(s.x1)) / 2;
+        const ry = Math.abs(fy(s.y2) - fy(s.y1)) / 2;
+        if (fillC) page.drawEllipse({ x: cx, y: cy, xScale: Math.max(rx, 1), yScale: Math.max(ry, 1), color: fillC, opacity: fillOp });
+        page.drawEllipse({ x: cx, y: cy, xScale: Math.max(rx, 1), yScale: Math.max(ry, 1), borderColor: c, borderWidth: sw, color: undefined });
+      } else if (s.type === 'triangle') {
+        const mx = (fx(s.x1) + fx(s.x2)) / 2;
+        const pts = [{ x: mx, y: fy(s.y1) }, { x: fx(s.x2), y: fy(s.y2) }, { x: fx(s.x1), y: fy(s.y2) }];
+        drawPdfPolygon(page, pts, c, sw);
+      } else if (s.type === 'polygon') {
+        const pts = s.points.map(p => ({ x: fx(p.x), y: fy(p.y) }));
+        drawPdfPolygon(page, pts, c, sw);
       }
     }
-
-    const outBytes = await pdfDoc.save();
-    const name = drawFile.name.replace('.pdf', '') + '_annotated.pdf';
-    downloadBytes(outBytes, name);
-    toast('書き込み済みPDFを保存しました！', 'success');
-  } catch (e) { toast('保存に失敗しました: ' + e.message, 'error'); console.error(e); }
-  btn.disabled = false; btn.innerHTML = '⬇ 書き込み済みPDFを保存';
+  }
+  return await pdfDoc.save();
 }
-
-// pdf-lib doesn't have drawPolygon — draw as lines
-function drawPdfPolygon(page, pts, color, thickness, fillColor, fillOpacity) {
+function drawPdfPolygon(page, pts, color, thickness) {
   const { LineCapStyle } = PDFLib;
   for (let i = 0; i < pts.length; i++) {
     const a = pts[i], b = pts[(i + 1) % pts.length];
@@ -1507,13 +1572,39 @@ function drawPdfPolygon(page, pts, color, thickness, fillColor, fillOpacity) {
   }
 }
 
-// ── Shared download ──
-function downloadBytes(bytes, filename) {
-  const blob = new Blob([bytes], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+// ── ダウンロード保存 ──
+async function saveDrawnPdf() {
+  if (!drawEntry) { toast('ファイルを読み込んでください', 'error'); return; }
+  const btn = document.querySelector('#drawWorkspace .btn-success');
+  btn.disabled = true; btn.innerHTML = '<span class="dots"><span></span><span></span><span></span></span> 書き出し中...';
+  try {
+    const outBytes = await buildAnnotatedBytes();
+    const name = drawEntry.name.replace(/\.pdf$/i, '') + '_annotated.pdf';
+    downloadBytes(outBytes, name);
+    toast('書き込み済みPDFを保存しました！', 'success');
+  } catch (e) { toast('保存に失敗しました: ' + e.message, 'error'); console.error(e); }
+  btn.disabled = false; btn.innerHTML = '⬇ 書き込み済みPDFを保存';
+}
+
+// ── 一覧に反映（結合・抽出にそのまま使える） ──
+async function applyDrawToList() {
+  if (!drawEntry) { toast('ファイルを読み込んでください', 'error'); return; }
+  const hasShapes = [...pageShapes.values()].some(arr => arr.length);
+  if (!hasShapes) { toast('書き込みがありません', 'error'); return; }
+  try {
+    const outBytes = await buildAnnotatedBytes();
+    const bytes = new Uint8Array(outBytes);
+    drawEntry.bytes = bytes;
+    drawEntry.size = bytes.length;
+    drawEntry.doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+    drawEntry.annotated = true;
+    drawEntry.thumbCache.clear();
+    drawPdfJsDoc = drawEntry.doc;
+    pageShapes.clear(); undoStacks.clear(); redoStacks.clear();
+    await renderDrawPage();
+    renderList();
+    toast('書き込みを一覧に反映しました（結合時にも含まれます）', 'success');
+  } catch (e) { toast('反映に失敗しました: ' + e.message, 'error'); console.error(e); }
 }
 </script>
 </body>
