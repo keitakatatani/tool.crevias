@@ -1522,7 +1522,7 @@ function buildSheetRow(id){
     billItem,                            // C: 勘定項目
     d.basePrice === '' ? '' : d.basePrice, // D: 本体価格（税抜）
     d.taxAmount === '' ? '' : d.taxAmount, // E: 消費税
-    (d.taxAmount === '' ? '' : 10),      // F: 消費税率（税額があれば10%）
+    10,                                  // F: 消費税率（基本10%を優先）
     occurDate,                           // G: 発生日
     payDate,                             // H: 入出金日（一律指定 or 発生日）
     '',                                  // I: 管理会社 売上・原価区分
@@ -1610,6 +1610,69 @@ function toNum(v){
   return Number.isFinite(n) ? n : null;
 }
 
+// セル内四則演算：Excel風に「=2770+277」「3047-277」「(100+8)*2」等を安全評価
+//   許可: 数字 . + - * / × ÷ ( ) と全角記号。evalは使わない。
+//   計算できれば数値文字列を返し、式でなければ元の値をそのまま返す
+function evalCellFormula(input){
+  let s = String(input || '').trim();
+  if(!s) return s;
+  // 先頭の「=」は式指定として除去
+  const forced = s.startsWith('=');
+  if(forced) s = s.slice(1);
+  // 全角→半角の記号・数字を正規化、カンマ・空白・通貨記号を除去
+  s = s.normalize('NFKC').replace(/[×✕]/g,'*').replace(/[÷]/g,'/').replace(/[,，\s円¥]/g,'');
+  // 演算子を含まない（＝ただの数値や文字列）場合、強制指定でなければそのまま返す
+  if(!forced && !/[+\-*/()]/.test(s.replace(/^-/,''))) return input;
+  // 許可文字だけか検証
+  if(!/^[0-9.+\-*/()]+$/.test(s)) return input; // 不正文字あり → 元の値
+  try {
+    const result = safeCalc(s);
+    if(result === null || !Number.isFinite(result)) return input;
+    // 小数は最大4桁に丸め、末尾0を除去
+    const rounded = Math.round(result * 10000) / 10000;
+    return String(rounded);
+  } catch(_){ return input; }
+}
+
+// 安全な四則演算パーサー（再帰下降）。+ - * / と括弧、小数対応
+function safeCalc(expr){
+  let pos = 0;
+  const peek = () => expr[pos];
+  function parseExpr(){
+    let v = parseTerm();
+    while(peek() === '+' || peek() === '-'){
+      const op = expr[pos++];
+      const r = parseTerm();
+      v = op === '+' ? v + r : v - r;
+    }
+    return v;
+  }
+  function parseTerm(){
+    let v = parseFactor();
+    while(peek() === '*' || peek() === '/'){
+      const op = expr[pos++];
+      const r = parseFactor();
+      v = op === '*' ? v * r : v / r;
+    }
+    return v;
+  }
+  function parseFactor(){
+    if(peek() === '('){
+      pos++; const v = parseExpr();
+      if(peek() === ')') pos++;
+      return v;
+    }
+    if(peek() === '-'){ pos++; return -parseFactor(); }
+    if(peek() === '+'){ pos++; return parseFactor(); }
+    let num = '';
+    while(pos < expr.length && /[0-9.]/.test(expr[pos])) num += expr[pos++];
+    return num === '' ? 0 : parseFloat(num);
+  }
+  const val = parseExpr();
+  if(pos !== expr.length) return null; // 未消費の文字 → 不正
+  return val;
+}
+
 // 行の総額を取得（手入力優先、なければAI読取のtotalAmount）
 function getRowTotal(id){
   const d = files.get(id)?.data;
@@ -1695,6 +1758,23 @@ function renderPreview(){
       // 本体価格(3)か消費税(4)を直接編集したら検算だけ更新（総額は変えない）
       revalidateRow(id);
     });
+    // 数値列（D本体3・E消費税4）はフォーカスアウト時に四則演算を評価
+    if(inp.dataset.col === '3' || inp.dataset.col === '4'){
+      inp.addEventListener('change', () => {
+        const id = Number(inp.dataset.id);
+        const col = Number(inp.dataset.col);
+        const entry = files.get(id);
+        if(!entry || !entry.data) return;
+        const calc = evalCellFormula(inp.value);
+        if(calc !== inp.value){
+          inp.value = calc;
+          if(!entry.data.cellOverride) entry.data.cellOverride = {};
+          entry.data.cellOverride[col] = calc;
+          inp.classList.add('edited');
+          revalidateRow(id);
+        }
+      });
+    }
   });
   // 総額セル編集 → 本体価格を再計算（総額−消費税）
   tbody.querySelectorAll('.cell-edit[data-total]').forEach(inp => {
@@ -1717,6 +1797,29 @@ function renderPreview(){
         if(dInput){ dInput.value = String(newBase); dInput.classList.add('edited'); }
       }
       revalidateRow(id);
+    });
+    // 総額セルもフォーカスアウト時に四則演算を評価
+    inp.addEventListener('change', () => {
+      const id = Number(inp.dataset.id);
+      const entry = files.get(id);
+      if(!entry || !entry.data) return;
+      const calc = evalCellFormula(inp.value);
+      if(calc !== inp.value){
+        inp.value = calc;
+        entry.data.totalOverride = calc;
+        inp.classList.add('edited');
+        // 本体価格 = 総額 − 消費税 を再計算
+        const tot = toNum(calc);
+        const tax = toNum(buildSheetRow(id)[4]);
+        if(tot !== null){
+          const newBase = tot - (tax === null ? 0 : tax);
+          if(!entry.data.cellOverride) entry.data.cellOverride = {};
+          entry.data.cellOverride[3] = String(newBase);
+          const dInput = tbody.querySelector(`.cell-edit[data-id="${id}"][data-col="3"]`);
+          if(dInput){ dInput.value = String(newBase); dInput.classList.add('edited'); }
+        }
+        revalidateRow(id);
+      }
     });
   });
 }
