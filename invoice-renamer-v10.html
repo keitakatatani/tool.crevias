@@ -248,6 +248,10 @@
   .master-status { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--warning); padding: 3px 8px; background: var(--surface2); border-radius: 6px; }
   .master-status.ok { color: var(--success); }
   .master-body { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .master-link-row { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .master-link { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; padding: 6px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--surface); transition: all .2s; }
+  .master-link:hover { background: var(--accent-light); }
+  .master-link-note { font-size: 10px; color: var(--text-muted); }
   .master-drop { flex: 1; min-width: 240px; display: block; padding: 12px 14px; border: 1.5px dashed var(--border); border-radius: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: all .2s; background: var(--surface2); }
   .master-drop:hover, .master-drop.dragging { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
   .master-drop b { color: var(--accent2); }
@@ -351,6 +355,10 @@
         <input type="file" id="masterInput" accept=".xlsx,.xls,.csv" hidden>
       </label>
       <button class="btn-master-clear" id="btnMasterClear" style="display:none">登録IDをクリア</button>
+    </div>
+    <div class="master-link-row">
+      <a class="master-link" href="https://app1.theredocs.com/import/expense_import" target="_blank" rel="noopener">🔗 リドックスの支出インポート画面を開く（物件一覧の取得元）</a>
+      <span class="master-link-note">※ログインが必要です。開いた画面からインポートフォーマットをダウンロードできます</span>
     </div>
     <div class="master-log" id="masterLog"></div>
     <div class="alias-link" id="aliasLink" style="display:none">
@@ -1488,6 +1496,22 @@ async function downloadAll() {
 }
 
 // ── スプレッドシート転記 ─────────────────────────────────
+// 取引先名から会社種別表記（株式会社／（株）等）を除去。前株・後株どちらも対応
+function stripCompanyType(name){
+  let s = String(name || '').trim();
+  if(!s) return s;
+  // 「株式会社」「有限会社」「合同会社」「合資会社」「合名会社」と、その略記（株）(株)（有）(有)等を除去
+  const fulls = ['株式会社','有限会社','合同会社','合資会社','合名会社','一般社団法人','一般財団法人','公益社団法人','公益財団法人'];
+  for(const w of fulls){
+    // 前株（先頭）と後株（末尾）の両方を除去
+    if(s.startsWith(w)) s = s.slice(w.length);
+    if(s.endsWith(w))   s = s.slice(0, s.length - w.length);
+  }
+  // 略記（株）(株)（有）(有)（同）等
+  s = s.replace(/[（(](株|有|合|同|社|財)[）)]/g, '');
+  return s.trim();
+}
+
 // 転記先スプレッドシートの列順（A〜L）
 // A:物件ID B:取引種別 C:勘定項目 D:本体価格 E:消費税 F:消費税率
 // G:発生日 H:入出金日 I:管理会社 売上・原価区分 J:オーナー精算対象 K:取引先 L:コメント
@@ -1527,7 +1551,7 @@ function buildSheetRow(id){
     payDate,                             // H: 入出金日（一律指定 or 発生日）
     '',                                  // I: 管理会社 売上・原価区分
     '0',                                 // J: オーナー精算対象（0=送金対象・既定 / 1=対象外）
-    d.vendor || '',                      // K: 取引先
+    stripCompanyType(d.vendor || ''),    // K: 取引先（会社種別表記を除去）
     comment,                             // L: コメント（入力規則準拠）
   ];
 
