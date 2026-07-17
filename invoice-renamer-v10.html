@@ -387,7 +387,7 @@
     <div class="paydate-row">
       <span class="paydate-label">💴 入出金日（全物件一律）</span>
       <input type="date" id="manualPayDate" class="paydate-input">
-      <button class="btn-paydate-auto" id="btnPayDateAuto" title="当月20日。土日祝と重なる場合は直前の平日にします">当月20日を自動セット</button>
+      <button class="btn-paydate-auto" id="btnPayDateAuto" title="20日を過ぎていれば翌月20日。土日祝と重なる場合は直前の平日にします">20日基準で自動セット</button>
       <span class="paydate-note" id="payDateNote"></span>
     </div>
 
@@ -1761,11 +1761,24 @@ function prevBusinessDay(date){
   return d;
 }
 
-// 当月20日（土日祝なら直前平日）を計算。基準は今日
+// 指定年月の20日（土日祝なら直前平日）の支払日を計算
+function payDateOfMonth(year, month){ // month: 0-11
+  const target = new Date(year, month, 20);
+  return prevBusinessDay(target);
+}
+
+// 入出金日を計算：当月20日の支払日を今日が過ぎていたら翌月20日にする
+//   （例: 7/20支払で、実際の入力が支払日当日以降なら8月20日を入れる）
 function calcPayDate20(baseDate){
   const base = baseDate || new Date();
-  const target = new Date(base.getFullYear(), base.getMonth(), 20);
-  return prevBusinessDay(target);
+  const today = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  // 当月の支払日
+  let pd = payDateOfMonth(today.getFullYear(), today.getMonth());
+  // 今日が当月支払日以降（当日含む）なら翌月へ送る
+  if(today.getTime() >= pd.getTime()){
+    pd = payDateOfMonth(today.getFullYear(), today.getMonth() + 1);
+  }
+  return pd;
 }
 
 function fmtDateInput(d){
@@ -1788,12 +1801,18 @@ document.getElementById('manualPayDate').addEventListener('change', () => {
 
 function updatePayDateNote(d){
   const wd = ['日','月','火','水','木','金','土'][d.getDay()];
-  const orig = new Date(d.getFullYear(), d.getMonth(), 20);
   const moved = (d.getDate() !== 20);
   const note = document.getElementById('payDateNote');
-  note.textContent = moved
-    ? `→ ${d.getMonth()+1}/${d.getDate()}（${wd}）※20日が休日のため前倒し`
-    : `→ ${d.getMonth()+1}/${d.getDate()}（${wd}）`;
+  // 今日の月より先の月なら「翌月分」と示す
+  const today = new Date();
+  const isNextMonth = (d.getFullYear() > today.getFullYear()) ||
+                      (d.getFullYear() === today.getFullYear() && d.getMonth() > today.getMonth());
+  let msg = `→ ${d.getMonth()+1}/${d.getDate()}（${wd}）`;
+  const notes = [];
+  if(isNextMonth) notes.push('翌月分');
+  if(moved) notes.push('20日が休日のため前倒し');
+  if(notes.length) msg += ` ※${notes.join('・')}`;
+  note.textContent = msg;
 }
 
 // ── 物件一覧Excel/CSV投入 → 物件ID自動補完 ───────────────
