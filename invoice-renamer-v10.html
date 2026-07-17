@@ -223,15 +223,6 @@
   .cell-edit.col-k { min-width: 150px; font-family: 'Noto Sans JP', sans-serif; }
   .cell-edit.col-l { min-width: 280px; font-family: 'Noto Sans JP', sans-serif; }
   .preview-table tr:hover td.pv-cell { background: var(--accent-light); }
-  /* 総額列（転記対象外） */
-  .th-total { background: rgba(240,149,106,.14) !important; }
-  .th-note { font-size: 8px; color: var(--accent2); font-weight: 400; }
-  .td-total { background: rgba(240,149,106,.05); }
-  .cell-edit.col-total { min-width: 66px; }
-  .cell-edit.col-total.err { border-color: var(--error); background: rgba(224,64,64,.08); color: var(--error); }
-  /* 検算ミスマッチ行：薄い黄色 */
-  .preview-table tr.row-mismatch td.pv-cell { background: rgba(250,220,80,.22); }
-  .preview-table tr.row-mismatch:hover td.pv-cell { background: rgba(250,220,80,.32); }
 
   /* 物件マスタ（物件ID）セクション */
   .master-section { margin-top: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px var(--shadow); }
@@ -259,18 +250,18 @@
 
   /* PDFビューアパネル */
   /* PDFプレビュー：右サイド固定パネル */
-  .pdf-viewer-wrap { position: fixed; top: 0; left: 0; width: 42vw; max-width: 620px; min-width: 380px; height: 100vh; z-index: 200; border-radius: 0; overflow: hidden; border: none; border-right: 2px solid var(--border); background: var(--surface); box-shadow: 6px 0 28px rgba(42,31,42,.14); display: none; flex-direction: column; }
+  .pdf-viewer-wrap { position: fixed; top: 0; right: 0; width: 42vw; max-width: 620px; min-width: 380px; height: 100vh; z-index: 200; border-radius: 0; overflow: hidden; border: none; border-left: 2px solid var(--border); background: var(--surface); box-shadow: -6px 0 28px rgba(42,31,42,.14); display: none; flex-direction: column; }
   .pdf-viewer-wrap.open { display: flex; }
-  /* 幅ドラッグ用ハンドル（パネル右端） */
-  .pdf-resize-handle { position: absolute; right: 0; top: 0; width: 8px; height: 100%; cursor: col-resize; z-index: 210; background: transparent; }
-  .pdf-resize-handle:hover, .pdf-resize-handle.dragging { background: linear-gradient(270deg, var(--accent), transparent); }
+  /* 幅ドラッグ用ハンドル（パネル左端） */
+  .pdf-resize-handle { position: absolute; left: 0; top: 0; width: 8px; height: 100%; cursor: col-resize; z-index: 210; background: transparent; }
+  .pdf-resize-handle:hover, .pdf-resize-handle.dragging { background: linear-gradient(90deg, var(--accent), transparent); }
   body.pdf-resizing { cursor: col-resize; user-select: none; }
   body.pdf-resizing .pdf-viewer-body { pointer-events: none; }
-  /* PDFが開いている間、本文を右に寄せる（左パネル分の余白確保） */
-  body.pdf-open .container { margin-left: 42vw; max-width: none; transition: margin-left .2s; }
+  /* PDFが開いている間、本文を左に寄せる（右パネル分の余白確保） */
+  body.pdf-open .container { margin-right: 42vw; max-width: none; transition: margin-right .2s; }
   @media (max-width: 900px){
     .pdf-viewer-wrap { width: 100vw; max-width: none; min-width: 0; }
-    body.pdf-open .container { margin-left: 0; }
+    body.pdf-open .container { margin-right: 0; }
   }
   .pdf-viewer-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: linear-gradient(135deg, rgba(224,90,122,.07), rgba(240,149,106,.07)); border-bottom: 1px solid var(--border); flex-shrink: 0; }
   .pdf-viewer-icon { width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 13px; }
@@ -423,9 +414,7 @@
       <table class="preview-table" id="previewTable">
         <thead>
           <tr>
-            <th>A 物件ID</th><th>B 取引種別</th><th>C 勘定項目</th>
-            <th class="th-total">総額 <span class="th-note">※転記対象外</span></th>
-            <th>D 本体価格</th>
+            <th>A 物件ID</th><th>B 取引種別</th><th>C 勘定項目</th><th>D 本体価格</th>
             <th>E 消費税</th><th>F 税率</th><th>G 発生日</th><th>H 入出金日</th>
             <th>I 売上原価区分</th><th>J オーナー精算</th><th>K 取引先</th><th>L コメント</th>
           </tr>
@@ -996,10 +985,10 @@ document.getElementById('btnViewerClose').addEventListener('click', () => {
     const w = Math.max(min, Math.min(px, max));
     wrap.style.width = w + 'px';
     wrap.style.maxWidth = 'none';
-    // メインコンテンツの左マージンも追従（左パネル）
+    // メインコンテンツの右マージンも追従
     const container = document.querySelector('.container');
     if(container && document.body.classList.contains('pdf-open')){
-      container.style.marginLeft = w + 'px';
+      container.style.marginRight = w + 'px';
     }
     return w;
   }
@@ -1012,8 +1001,8 @@ document.getElementById('btnViewerClose').addEventListener('click', () => {
   });
   window.addEventListener('mousemove', e => {
     if(!dragging) return;
-    // パネルは左端固定なので、幅 = マウスX
-    const w = e.clientX;
+    // パネルは右端固定なので、幅 = ビューポート右端 - マウスX
+    const w = window.innerWidth - e.clientX;
     applyWidth(w);
   });
   window.addEventListener('mouseup', () => {
@@ -1490,23 +1479,6 @@ async function copyToSheet(){
 }
 
 // 転記プレビュー表を描画
-// 数値化ヘルパー（カンマ・空白除去）。空や非数は null
-function toNum(v){
-  if(v === '' || v === null || v === undefined) return null;
-  const s = String(v).replace(/[,，\s円¥\\]/g,'').trim();
-  if(s === '') return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-
-// 行の総額を取得（手入力優先、なければAI読取のtotalAmount）
-function getRowTotal(id){
-  const d = files.get(id)?.data;
-  if(!d) return '';
-  if(d.totalOverride !== undefined && d.totalOverride !== null) return d.totalOverride;
-  return d.totalAmount === '' || d.totalAmount === undefined ? '' : d.totalAmount;
-}
-
 function renderPreview(){
   const done = [...files.keys()].filter(id => files.get(id).status === 'done');
   const tbody = document.getElementById('previewBody');
@@ -1517,45 +1489,28 @@ function renderPreview(){
     const r = buildSheetRow(id);
     if(!r) continue;
     const ov = files.get(id)?.data?.cellOverride || {};
-    const total = getRowTotal(id);
-
-    // 検算：本体価格(D=index3) + 消費税(E=index4) == 総額 か
-    const base = toNum(r[3]), tax = toNum(r[4]), tot = toNum(total);
-    let mismatch = false;
-    if(tot !== null){
-      const b = base === null ? 0 : base;
-      const t = tax === null ? 0 : tax;
-      if(b + t !== tot) mismatch = true;
-    }
-
     const tr = document.createElement('tr');
-    if(mismatch) tr.className = 'row-mismatch';
-
-    // A,B,C（0,1,2）→ 総額列 → D以降（3..11）の順で組み立て
-    let html = '';
-    const cellHtml = (i) => {
+    tr.innerHTML = r.map((cell, i) => {
       const edited = ov[i] !== undefined && ov[i] !== null;
-      const warnId = (i===0 && !r[i]);
-      const cls = ['cell-edit', colClass[i], numCols.has(i)?'num':'', edited?'edited':'', warnId?'empty-id':''].filter(Boolean).join(' ');
+      const warnId = (i===0 && !cell);   // 物件ID空欄
+      const cls = [
+        'cell-edit',
+        colClass[i],
+        numCols.has(i) ? 'num' : '',
+        edited ? 'edited' : '',
+        warnId ? 'empty-id' : ''
+      ].filter(Boolean).join(' ');
       const ph = warnId ? '⚠️未取得' : '';
-      return `<td class="pv-cell"><input class="${cls}" data-id="${id}" data-col="${i}" value="${esc(String(r[i]))}" placeholder="${ph}"></td>`;
-    };
-    // A,B,C
-    html += cellHtml(0) + cellHtml(1) + cellHtml(2);
-    // 総額列（転記対象外・編集で本体再計算）
-    const totalEdited = files.get(id)?.data?.totalOverride !== undefined;
-    html += `<td class="pv-cell td-total"><input class="cell-edit col-total num${totalEdited?' edited':''}${mismatch?' err':''}" data-id="${id}" data-total="1" value="${esc(String(total))}" placeholder="総額" title="税込総額（Excelには転記されません）"></td>`;
-    // D〜L
-    for(let i=3;i<=11;i++) html += cellHtml(i);
-    tr.innerHTML = html;
+      return `<td class="pv-cell"><input class="${cls}" data-id="${id}" data-col="${i}" value="${esc(String(cell))}" placeholder="${ph}"></td>`;
+    }).join('');
     tbody.appendChild(tr);
   }
   if(!tbody.children.length){
-    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--text-muted);padding:12px">解析済みデータがありません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--text-muted);padding:12px">解析済みデータがありません</td></tr>';
     return;
   }
-  // 通常セル編集
-  tbody.querySelectorAll('.cell-edit[data-col]').forEach(inp => {
+  // 全セル編集イベント：cellOverride に保存
+  tbody.querySelectorAll('.cell-edit').forEach(inp => {
     inp.addEventListener('input', () => {
       const id = Number(inp.dataset.id);
       const col = Number(inp.dataset.col);
@@ -1564,50 +1519,8 @@ function renderPreview(){
       if(!entry.data.cellOverride) entry.data.cellOverride = {};
       entry.data.cellOverride[col] = inp.value;
       inp.classList.add('edited');
-      // 本体価格(3)か消費税(4)を直接編集したら検算だけ更新（総額は変えない）
-      revalidateRow(id);
     });
   });
-  // 総額セル編集 → 本体価格を再計算（総額−消費税）
-  tbody.querySelectorAll('.cell-edit[data-total]').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const id = Number(inp.dataset.id);
-      const entry = files.get(id);
-      if(!entry || !entry.data) return;
-      entry.data.totalOverride = inp.value;
-      inp.classList.add('edited');
-      // 本体価格 = 総額 − 消費税
-      const tot = toNum(inp.value);
-      const curRow = buildSheetRow(id);
-      const tax = toNum(curRow[4]);
-      if(tot !== null){
-        const newBase = tot - (tax === null ? 0 : tax);
-        if(!entry.data.cellOverride) entry.data.cellOverride = {};
-        entry.data.cellOverride[3] = String(newBase);
-        // 該当行のD列inputを更新
-        const dInput = tbody.querySelector(`.cell-edit[data-id="${id}"][data-col="3"]`);
-        if(dInput){ dInput.value = String(newBase); dInput.classList.add('edited'); }
-      }
-      revalidateRow(id);
-    });
-  });
-}
-
-// 1行の検算をやり直し、行の黄色ハイライトと総額セルのエラー表示を更新
-function revalidateRow(id){
-  const row = buildSheetRow(id);
-  const total = getRowTotal(id);
-  const base = toNum(row[3]), tax = toNum(row[4]), tot = toNum(total);
-  let mismatch = false;
-  if(tot !== null){
-    const b = base===null?0:base, t = tax===null?0:tax;
-    if(b + t !== tot) mismatch = true;
-  }
-  const tbody = document.getElementById('previewBody');
-  const totalInput = tbody.querySelector(`.cell-edit[data-id="${id}"][data-total]`);
-  const tr = totalInput ? totalInput.closest('tr') : null;
-  if(tr) tr.classList.toggle('row-mismatch', mismatch);
-  if(totalInput) totalInput.classList.toggle('err', mismatch);
 }
 
 function renderDL() {
