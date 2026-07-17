@@ -205,15 +205,24 @@
   .preview-wrap { margin-top: 10px; overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
   .preview-table { border-collapse: collapse; width: 100%; font-size: 10px; font-family: 'DM Mono', monospace; }
   .preview-table th { background: var(--surface2); color: var(--text-muted); padding: 6px 8px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border); font-weight: 500; position: sticky; top: 0; }
-  .preview-table td { padding: 5px 8px; border-bottom: 1px solid var(--surface2); white-space: nowrap; color: var(--text); }
-  .preview-table td.empty-id { background: rgba(232,151,42,.12); color: var(--warning); }
-  .preview-table td.num { text-align: right; }
-  .preview-table tr:hover td { background: var(--accent-light); }
-  .preview-table td.cmt-cell { min-width: 260px; padding: 2px 4px; }
-  .cmt-input { width: 100%; min-width: 250px; font-family: 'Noto Sans JP', sans-serif; font-size: 10px; padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--text); }
-  .cmt-input:hover { border-color: var(--border); background: var(--surface); }
-  .cmt-input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
-  .cmt-input.edited { border-color: var(--warning); background: rgba(232,151,42,.06); }
+  .preview-table td.pv-cell { padding: 2px 3px; border-bottom: 1px solid var(--surface2); border-right: 1px solid var(--surface2); white-space: nowrap; }
+  .cell-edit { width: 100%; box-sizing: border-box; font-family: 'DM Mono', monospace; font-size: 10px; padding: 4px 5px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--text); }
+  .cell-edit:hover { border-color: var(--border); background: var(--surface); }
+  .cell-edit:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 2px var(--accent-light); }
+  .cell-edit.num { text-align: right; }
+  .cell-edit.edited { border-color: var(--warning); background: rgba(232,151,42,.06); }
+  .cell-edit.empty-id { background: rgba(232,151,42,.12); color: var(--warning); }
+  .cell-edit.empty-id::placeholder { color: var(--warning); opacity: .8; }
+  /* 列ごとの最小幅（コメントは広め、金額系は狭め） */
+  .cell-edit.col-id { min-width: 64px; }
+  .cell-edit.col-b, .cell-edit.col-f, .cell-edit.col-j { min-width: 48px; }
+  .cell-edit.col-c { min-width: 72px; }
+  .cell-edit.col-d, .cell-edit.col-e { min-width: 60px; }
+  .cell-edit.col-g, .cell-edit.col-h { min-width: 86px; }
+  .cell-edit.col-i { min-width: 90px; }
+  .cell-edit.col-k { min-width: 150px; font-family: 'Noto Sans JP', sans-serif; }
+  .cell-edit.col-l { min-width: 280px; font-family: 'Noto Sans JP', sans-serif; }
+  .preview-table tr:hover td.pv-cell { background: var(--accent-light); }
 
   /* 物件マスタ（物件ID）セクション */
   .master-section { margin-top: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px var(--shadow); }
@@ -243,6 +252,11 @@
   /* PDFプレビュー：右サイド固定パネル */
   .pdf-viewer-wrap { position: fixed; top: 0; right: 0; width: 42vw; max-width: 620px; min-width: 380px; height: 100vh; z-index: 200; border-radius: 0; overflow: hidden; border: none; border-left: 2px solid var(--border); background: var(--surface); box-shadow: -6px 0 28px rgba(42,31,42,.14); display: none; flex-direction: column; }
   .pdf-viewer-wrap.open { display: flex; }
+  /* 幅ドラッグ用ハンドル（パネル左端） */
+  .pdf-resize-handle { position: absolute; left: 0; top: 0; width: 8px; height: 100%; cursor: col-resize; z-index: 210; background: transparent; }
+  .pdf-resize-handle:hover, .pdf-resize-handle.dragging { background: linear-gradient(90deg, var(--accent), transparent); }
+  body.pdf-resizing { cursor: col-resize; user-select: none; }
+  body.pdf-resizing .pdf-viewer-body { pointer-events: none; }
   /* PDFが開いている間、本文を左に寄せる（右パネル分の余白確保） */
   body.pdf-open .container { margin-right: 42vw; max-width: none; transition: margin-right .2s; }
   @media (max-width: 900px){
@@ -413,6 +427,7 @@
 
   <!-- PDFビューアパネル -->
   <div class="pdf-viewer-wrap" id="pdfViewerWrap">
+    <div class="pdf-resize-handle" id="pdfResizeHandle" title="ドラッグで幅を調整"></div>
     <div class="pdf-viewer-header">
       <div class="pdf-viewer-icon">📄</div>
       <div class="pdf-viewer-title" id="pdfViewerTitle">PDFプレビュー</div>
@@ -952,6 +967,57 @@ document.getElementById('btnViewerClose').addEventListener('click', () => {
   document.body.classList.remove('pdf-open');
 });
 
+// ── PDFパネルの幅をドラッグで調整 ────────────────────────
+(function initPdfResize(){
+  const handle = document.getElementById('pdfResizeHandle');
+  const wrap = document.getElementById('pdfViewerWrap');
+  if(!handle || !wrap) return;
+  let dragging = false;
+
+  // 保存済みの幅を復元
+  try {
+    const savedW = parseInt(localStorage.getItem('pdf_panel_width')||'', 10);
+    if(savedW && savedW > 300) applyWidth(savedW);
+  } catch(_){}
+
+  function applyWidth(px){
+    const min = 320, max = Math.min(window.innerWidth - 200, 1100);
+    const w = Math.max(min, Math.min(px, max));
+    wrap.style.width = w + 'px';
+    wrap.style.maxWidth = 'none';
+    // メインコンテンツの右マージンも追従
+    const container = document.querySelector('.container');
+    if(container && document.body.classList.contains('pdf-open')){
+      container.style.marginRight = w + 'px';
+    }
+    return w;
+  }
+
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragging = true;
+    handle.classList.add('dragging');
+    document.body.classList.add('pdf-resizing');
+  });
+  window.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    // パネルは右端固定なので、幅 = ビューポート右端 - マウスX
+    const w = window.innerWidth - e.clientX;
+    applyWidth(w);
+  });
+  window.addEventListener('mouseup', () => {
+    if(!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.classList.remove('pdf-resizing');
+    // 現在幅を保存
+    const w = parseInt(wrap.style.width, 10);
+    try { if(w) localStorage.setItem('pdf_panel_width', String(w)); } catch(_){}
+    // 再描画（ズーム基準幅が変わるため）
+    if(viewerPdf) renderViewerPage(viewerPage);
+  });
+})();
+
 // ── PDF → text / images ─────────────────────────────────
 async function pdfToText(file) {
   const ab = await file.arrayBuffer();
@@ -1328,7 +1394,7 @@ function buildSheetRow(id){
     ? d.commentOverride
     : buildComment(d.periodStart, d.periodEnd, billItem, location, planName, propName);
 
-  return [
+  const row = [
     propId,                              // A: 物件ID
     '支出',                              // B: 取引種別（固定）
     billItem,                            // C: 勘定項目
@@ -1342,6 +1408,16 @@ function buildSheetRow(id){
     d.vendor || '',                      // K: 取引先
     comment,                             // L: コメント（入力規則準拠）
   ];
+
+  // 手動編集（セル上書き）があれば各列に適用。全列が自由入力可能。
+  if(d.cellOverride){
+    for(let i = 0; i < row.length; i++){
+      if(d.cellOverride[i] !== undefined && d.cellOverride[i] !== null){
+        row[i] = d.cellOverride[i];
+      }
+    }
+  }
+  return row;
 }
 
 // 一律入出金日（手動指定）を取得。YYYY/MM/DD形式に正規化。未指定なら ''
@@ -1408,22 +1484,24 @@ function renderPreview(){
   const tbody = document.getElementById('previewBody');
   tbody.innerHTML = '';
   const numCols = new Set([3,4,5]); // D,E,F は数値
+  const colClass = ['col-id','col-b','col-c','col-d','col-e','col-f','col-g','col-h','col-i','col-j','col-k','col-l'];
   for(const id of done){
     const r = buildSheetRow(id);
     if(!r) continue;
+    const ov = files.get(id)?.data?.cellOverride || {};
     const tr = document.createElement('tr');
     tr.innerHTML = r.map((cell, i) => {
-      // L列（コメント, index 11）は編集可能に
-      if(i === 11){
-        const edited = files.get(id)?.data?.commentOverride !== undefined;
-        return `<td class="cmt-cell"><input class="cmt-input${edited?' edited':''}" data-id="${id}" value="${esc(String(cell))}" title="${edited?'手動編集済み':'自動生成（編集可）'}"></td>`;
-      }
-      let cls = '';
-      if(i===0 && !cell) cls = 'empty-id';       // 物件ID空欄を警告色
-      else if(numCols.has(i)) cls = 'num';
-      const disp = (cell === '' || cell === null || cell === undefined)
-        ? (i===0 ? '⚠️ 未取得' : '') : esc(String(cell));
-      return `<td class="${cls}">${disp}</td>`;
+      const edited = ov[i] !== undefined && ov[i] !== null;
+      const warnId = (i===0 && !cell);   // 物件ID空欄
+      const cls = [
+        'cell-edit',
+        colClass[i],
+        numCols.has(i) ? 'num' : '',
+        edited ? 'edited' : '',
+        warnId ? 'empty-id' : ''
+      ].filter(Boolean).join(' ');
+      const ph = warnId ? '⚠️未取得' : '';
+      return `<td class="pv-cell"><input class="${cls}" data-id="${id}" data-col="${i}" value="${esc(String(cell))}" placeholder="${ph}"></td>`;
     }).join('');
     tbody.appendChild(tr);
   }
@@ -1431,12 +1509,16 @@ function renderPreview(){
     tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--text-muted);padding:12px">解析済みデータがありません</td></tr>';
     return;
   }
-  // コメント編集イベント
-  tbody.querySelectorAll('.cmt-input').forEach(inp => {
+  // 全セル編集イベント：cellOverride に保存
+  tbody.querySelectorAll('.cell-edit').forEach(inp => {
     inp.addEventListener('input', () => {
       const id = Number(inp.dataset.id);
+      const col = Number(inp.dataset.col);
       const entry = files.get(id);
-      if(entry && entry.data){ entry.data.commentOverride = inp.value; inp.classList.add('edited'); }
+      if(!entry || !entry.data) return;
+      if(!entry.data.cellOverride) entry.data.cellOverride = {};
+      entry.data.cellOverride[col] = inp.value;
+      inp.classList.add('edited');
     });
   });
 }
