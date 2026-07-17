@@ -821,7 +821,7 @@ function buildRow(id, entry, num) {
       <button class="type-tab ${tm}" id="tm${id}" onclick="setType(${id},'管理')">管理</button>
       <button class="type-tab ${to}" id="to${id}" onclick="setType(${id},'保有')">保有</button>
     </div></td>` +
-    `<td class="col-stamp"><input class="cell-input" id="st${id}" value="${esc(d.receiptStamp)}" placeholder="0310支払"></td>` +
+    `<td class="col-stamp"><input class="cell-input" id="st${id}" value="${esc(d.receiptStamp)}" placeholder="0310支払" title="「MMDD支払」形式（例: 0508支払 → 5月8日）。この4桁を直すと転記表の『G発生日』も自動で連動します"></td>` +
     `<td class="col-item"><input class="cell-input" id="bi${id}" value="${esc(d.billingItem)}" placeholder="電気料金…"></td>` +
     `<td class="col-plan"><input class="cell-input" id="pl${id}" value="${esc(d.planName)}" placeholder="スタンダードS…"></td>` +
     `<td class="col-prop">${propCell(id, d)}</td>` +
@@ -838,7 +838,14 @@ function attachRowEvents(id) {
   ['st','bi','pl','pr','lo'].forEach(fname => {
     const el = document.getElementById(`${fname}${id}`);
     if (!el) return;
-    el.addEventListener('input', () => { if (entry.data) entry.data[fieldMap[fname]] = el.value; upd(id); });
+    el.addEventListener('input', () => {
+      if (entry.data) entry.data[fieldMap[fname]] = el.value;
+      // 領収日(st)を直接編集したら、G発生日の手動固定(cellOverride[6])を解除して連動を復活
+      if (fname === 'st' && entry.data && entry.data.cellOverride) {
+        delete entry.data.cellOverride[6];
+      }
+      upd(id);
+    });
     el.addEventListener('keydown', e => handleKey(e, id, fname));
 
     // 物件名：入力中は色を更新、フォーカスを外したらA列の正式名称へ自動正規化
@@ -1409,12 +1416,28 @@ function buildComment(start, end, billingItem, location, planName, propertyName)
 }
 
 // 発生日：領収日を優先、無ければ今日（YYYY/MM/DD）
-function resolveOccurDate(receiptDate){
-  const s = String(receiptDate||'').trim();
-  if(s){
-    const m = s.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
-    if(m) return `${m[1]}/${String(m[2]).padStart(2,'0')}/${String(m[3]).padStart(2,'0')}`;
+// 発生日を決定
+//   優先: 領収日スタンプ（stamp「0508支払」等の4桁MMDD） > receiptDate(YYYY/MM/DD) > 今日
+//   stampのMMDDには年が無いので【常に当年】を補う
+function resolveOccurDate(receiptDate, stamp){
+  const rd = String(receiptDate||'').trim();
+  const rdm = rd.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+
+  // stamp（例「0508支払」「0508」）から連続する4桁を拾い MMDD として解釈
+  const st = String(stamp||'').trim();
+  if(st){
+    const sm = st.match(/(\d{2})(\d{2})/); // 先頭の4桁連続
+    if(sm){
+      const mm = parseInt(sm[1], 10), dd = parseInt(sm[2], 10);
+      if(mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31){
+        const y = new Date().getFullYear();  // 常に当年
+        return `${y}/${String(mm).padStart(2,'0')}/${String(dd).padStart(2,'0')}`;
+      }
+    }
   }
+  // stampが使えなければ receiptDate
+  if(rdm) return `${rdm[1]}/${String(rdm[2]).padStart(2,'0')}/${String(rdm[3]).padStart(2,'0')}`;
+  // どちらも無ければ今日
   const t = new Date();
   return `${t.getFullYear()}/${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}`;
 }
@@ -1480,7 +1503,9 @@ function buildSheetRow(id){
   const planName = document.getElementById(`pl${id}`)?.value ?? d.planName ?? '';
   const location = document.getElementById(`lo${id}`)?.value ?? d.location ?? '';
   const propId   = propIdOf(propName, location) || d.propertyId || '';
-  const occurDate = resolveOccurDate(d.receiptDate);
+  // 発生日：領収日欄（stamp「0508支払」）の4桁MMDDを優先、なければreceiptDate、なければ今日
+  const stampVal = document.getElementById(`st${id}`)?.value ?? d.receiptStamp ?? '';
+  const occurDate = resolveOccurDate(d.receiptDate, stampVal);
 
   // 入出金日：一律手動指定があればそれを、なければ発生日を使用
   const payDate = getManualPayDate() || occurDate;
@@ -1654,6 +1679,19 @@ function renderPreview(){
       if(!entry.data.cellOverride) entry.data.cellOverride = {};
       entry.data.cellOverride[col] = inp.value;
       inp.classList.add('edited');
+      // G発生日(col=6)を編集したら、領収日欄「MMDD支払」へ逆連動
+      if(col === 6){
+        const m = String(inp.value).match(/\d{4}[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+        if(m){
+          const stamp = `${String(parseInt(m[1],10)).padStart(2,'0')}${String(parseInt(m[2],10)).padStart(2,'0')}支払`;
+          entry.data.receiptStamp = stamp;
+          // 読み取りテーブルの領収日欄を更新
+          const stEl = document.getElementById(`st${id}`);
+          if(stEl && stEl.value !== stamp){ stEl.value = stamp; }
+          // ファイル名表示も更新
+          if(typeof upd === 'function') upd(id);
+        }
+      }
       // 本体価格(3)か消費税(4)を直接編集したら検算だけ更新（総額は変えない）
       revalidateRow(id);
     });
