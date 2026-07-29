@@ -1498,6 +1498,33 @@ async function downloadAll() {
 }
 
 // ── スプレッドシート転記 ─────────────────────────────────
+// 勘定項目名 → リドックス勘定項目番号（支出）。ExcelのD列（支出：勘定項目）に準拠
+//   18:電気料金 19:水道料金 20:ガス料金 21:通信料金
+const ACCOUNT_CODE = {
+  '電気料金': 18,
+  '水道料金': 19,
+  'ガス料金': 20,
+  '通信料金': 21,
+};
+// 勘定項目を番号に変換。マスタに無ければ元の文字列のまま返す（手入力の余地を残す）
+function accountCodeOf(billItem){
+  const key = String(billItem || '').trim();
+  if(ACCOUNT_CODE[key] !== undefined) return ACCOUNT_CODE[key];
+  return key; // 未知の項目はそのまま（後で手編集可能）
+}
+
+// 取引種別 → 番号（収入=1 / 支出=2）。本アプリは原則「支出」＝2
+const TXTYPE_CODE = { '支出': 2, '収入': 1 };
+
+// 日付を必ず YYYY/MM/DD（ゼロ埋め）に整形。整形できなければ元の値を返す
+function fmtDateYMD(v){
+  const s = String(v || '').trim();
+  if(!s) return s;
+  const m = s.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+  if(!m) return s;
+  return `${m[1]}/${String(parseInt(m[2],10)).padStart(2,'0')}/${String(parseInt(m[3],10)).padStart(2,'0')}`;
+}
+
 // 取引先名から会社種別表記（株式会社／（株）等）を除去。前株・後株どちらも対応
 function stripCompanyType(name){
   let s = String(name || '').trim();
@@ -1544,13 +1571,13 @@ function buildSheetRow(id){
 
   const row = [
     propId,                              // A: 物件ID
-    '支出',                              // B: 取引種別（固定）
-    billItem,                            // C: 勘定項目
+    TXTYPE_CODE['支出'],                 // B: 取引種別（支出=2）
+    accountCodeOf(billItem),             // C: 勘定項目（番号：電気18/水道19/ガス20/通信21）
     d.basePrice === '' ? '' : d.basePrice, // D: 本体価格（税抜）
     d.taxAmount === '' ? '' : d.taxAmount, // E: 消費税
     10,                                  // F: 消費税率（基本10%を優先）
-    occurDate,                           // G: 発生日
-    payDate,                             // H: 入出金日（一律指定 or 発生日）
+    fmtDateYMD(occurDate),               // G: 発生日（YYYY/MM/DD ゼロ埋め）
+    fmtDateYMD(payDate),                 // H: 入出金日（YYYY/MM/DD ゼロ埋め）
     '',                                  // I: 管理会社 売上・原価区分
     '0',                                 // J: オーナー精算対象（0=送金対象・既定 / 1=対象外）
     stripCompanyType(d.vendor || ''),    // K: 取引先（会社種別表記を除去）
@@ -1561,7 +1588,8 @@ function buildSheetRow(id){
   if(d.cellOverride){
     for(let i = 0; i < row.length; i++){
       if(d.cellOverride[i] !== undefined && d.cellOverride[i] !== null){
-        row[i] = d.cellOverride[i];
+        // G発生日(6)・H入出金日(7)は手入力でも YYYY/MM/DD に整形
+        row[i] = (i === 6 || i === 7) ? fmtDateYMD(d.cellOverride[i]) : d.cellOverride[i];
       }
     }
   }
