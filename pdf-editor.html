@@ -491,6 +491,11 @@ let nextId = 1;
 let lastMergedIds = [];
 let mergeNameEdited = false;
 
+// ── 容量制限と枚数制限 ──
+const MAX_TOTAL_SIZE = 1000 * 1024 * 1024; // 1000 MB
+const MAX_FILE_COUNT = 200;                 // 200ファイル
+let totalSizeUsed = 0;
+
 document.getElementById('mergeName').addEventListener('input', () => { mergeNameEdited = true; });
 
 const dropzone = document.getElementById('dropzone');
@@ -505,7 +510,25 @@ document.getElementById('fileInput').addEventListener('change', async e => {
 });
 
 async function addFiles(fileList) {
+  // 枚数チェック
+  if (files.length >= MAX_FILE_COUNT) {
+    toast(`ファイル数が上限（${MAX_FILE_COUNT}件）に達しています`, 'error');
+    return;
+  }
+  
   for (const f of fileList) {
+    // 容量チェック
+    if (totalSizeUsed + f.size > MAX_TOTAL_SIZE) {
+      toast(`${f.name}: 追加すると容量上限（${formatBytes(MAX_TOTAL_SIZE)}）を超えます`, 'error');
+      continue;
+    }
+    
+    // ファイル数チェック
+    if (files.length >= MAX_FILE_COUNT) {
+      toast(`ファイル数が上限（${MAX_FILE_COUNT}件）に達しました`, 'error');
+      break;
+    }
+    
     try {
       const bytes = new Uint8Array(await f.arrayBuffer());
       const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
@@ -516,12 +539,20 @@ async function addFiles(fileList) {
         selPages: new Set(), expanded: false, checked: false,
         annotated: false, viewPos: 0, thumbCache: new Map()
       });
+      totalSizeUsed += f.size;
     } catch { toast(`${f.name} の読み込みに失敗しました`, 'error'); }
   }
   renderList();
+  updateCapacityInfo();
 }
 
 function entryById(id) { return files.find(f => f.id === id); }
+
+function updateCapacityInfo() {
+  const percent = Math.round((totalSizeUsed / MAX_TOTAL_SIZE) * 100);
+  const remaining = MAX_TOTAL_SIZE - totalSizeUsed;
+  console.log(`容量使用率: ${percent}% (${formatBytes(totalSizeUsed)} / ${formatBytes(MAX_TOTAL_SIZE)})`);
+}
 
 // ────────────────────────────────────────
 // RENDER — ファイル一覧
@@ -631,11 +662,20 @@ function toggleCheckAll() {
 function removeChecked() {
   const n = files.filter(f => f.checked).length;
   if (!n) { toast('削除するファイルを選択してください', 'error'); return; }
+  const removedSize = files.filter(f => f.checked).reduce((sum, f) => sum + f.size, 0);
   files = files.filter(f => !f.checked);
+  totalSizeUsed -= removedSize;
   toast(`${n}件のファイルを削除しました`, 'info');
   renderList();
+  updateCapacityInfo();
 }
-function removeFile(id) { files = files.filter(f => f.id !== id); renderList(); }
+function removeFile(id) {
+  const removed = files.find(f => f.id === id);
+  if (removed) totalSizeUsed -= removed.size;
+  files = files.filter(f => f.id !== id);
+  renderList();
+  updateCapacityInfo();
+}
 function moveFile(id, dir) {
   const i = files.findIndex(f => f.id === id);
   const j = i + dir;
@@ -949,12 +989,15 @@ async function mergePDFs() {
 function deleteMergedFiles() {
   if (!lastMergedIds.length) return;
   const n = files.filter(f => lastMergedIds.includes(f.id)).length;
+  const removedSize = files.filter(f => lastMergedIds.includes(f.id)).reduce((sum, f) => sum + f.size, 0);
   files = files.filter(f => !lastMergedIds.includes(f.id));
+  totalSizeUsed -= removedSize;
   lastMergedIds = [];
   document.getElementById('btnDeleteMerged').style.display = 'none';
   mergeNameEdited = false;
   renderList();
   toast(`結合前のファイル ${n} 件を削除しました`, 'info');
+  updateCapacityInfo();
 }
 
 // ────────────────────────────────────────
