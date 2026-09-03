@@ -212,6 +212,7 @@
   .btn-read.stop:not(:disabled):hover { border-color: var(--error); color: var(--error); background: rgba(224,64,64,.08); opacity: 1; }
   .read-rate { height: 26px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); font-size: 11px; padding: 0 4px; cursor: pointer; }
   .read-link { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; cursor: pointer; user-select: none; }
+  .read-items { display: inline-flex; align-items: center; gap: 8px; padding: 0 6px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
   .font-size-ctrl { margin-left: auto; display: flex; align-items: center; gap: 6px; }
   .fsc-label { font-size: 10px; color: var(--text-muted); }
   .btn-fsc { width: 24px; height: 24px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
@@ -469,6 +470,11 @@
           <option value="1.3">速い</option>
           <option value="1.6">最速</option>
         </select>
+        <span class="read-items" title="読み上げる項目を選択">
+          <label class="read-link"><input type="checkbox" id="readProp" checked> 物件名</label>
+          <label class="read-link"><input type="checkbox" id="readTotal" checked> 総額</label>
+          <label class="read-link"><input type="checkbox" id="readDate" checked> 発生日</label>
+        </span>
         <label class="read-link" title="読み上げに合わせてPDFも開く"><input type="checkbox" id="readOpenPdf" checked> PDF連動</label>
       </div>
       <div class="font-size-ctrl">
@@ -1298,8 +1304,9 @@ const PROMPT = `この請求書・払込票から以下の情報を抽出して�
    - ※本体価格は totalAmount − taxAmount で自動計算されるため、ここでは総額から引く前の消費税額そのものを返すこと。
 
 8. receiptDate: 上記3と同じ日付を「YYYY/MM/DD」形式で返す。探す場所と優先順位は3と同じ（日附印/収納印 → 振替月日/振替日/口座振替日 → 口座振替予定日/振替予定日/今月分振替予定日/お支払期限日 → 領収日/領収月日）。
-   - 西暦（年）が印字されていない場合は、請求年月（「◯年◯月分」）または現在日付から最も近い年を推定し、必ず年を補完すること。月日が読めれば空文字にしない。
-   - 和暦（例:令和8年）は西暦へ変換する（令和 = 2018 + 年、つまり令和8年=2026年）。
+   - 【重要・和暦変換】和暦は次の対応で西暦へ変換する：令和N年 = 2018 + N。すなわち **令和8年 = 2026年**、令和7年 = 2025年、令和6年 = 2024年。「令和8年」を2027年などにしないこと。
+   - 書類に年（西暦または和暦）が印字されている場合は、その年を必ずそのまま使う。前後の年に勝手にずらさない。
+   - 年がどこにも印字されていない場合のみ、請求年月または現在日付から最も近い年を推定して補う。月日が読めれば空文字にしない。
    - receiptStampと同じ日付にすること。
 
 9. periodStart / periodEnd: 使用期間（検針期間・ご使用期間）の開始日と終了日を「YYYY/MM/DD」形式で。「MM/DD～MM/DD」しか無い場合も年を補って返す。読み取れなければ空文字。
@@ -1534,10 +1541,24 @@ function buildComment(start, end, billingItem, location, planName, propertyName)
   return period;
 }
 
-// 年（西暦）が無い月日について、現在日に最も近い年を推定
+// 年（西暦）が無い月日について西暦を推定する。
+// 公共料金の発生日は「直近の過去〜せいぜい約45日先」に収まるため、
+// 未来へ大きく飛ばさず、条件を満たす中で最も新しい年を選ぶ。
 function inferYearForMD(month, day){
   const today = new Date();
+  today.setHours(0,0,0,0);
   const cy = today.getFullYear();
+  const WINDOW = 45 * 86400000; // 45日先まで許容（振替予定日・支払期限などの近い未来）
+  let pick = null, pickTime = -Infinity;
+  for(const y of [cy-1, cy, cy+1]){
+    const dt = new Date(y, month-1, day); dt.setHours(0,0,0,0);
+    const ahead = dt.getTime() - today.getTime();
+    if(ahead <= WINDOW){ // 過去 or 45日以内の未来
+      if(dt.getTime() > pickTime){ pickTime = dt.getTime(); pick = y; }
+    }
+  }
+  if(pick !== null) return pick;
+  // すべて45日超の未来（通常起こらない）→ 最近傍年
   let best = cy, bestDiff = Infinity;
   for(const y of [cy-1, cy, cy+1]){
     const dt = new Date(y, month-1, day);
@@ -1910,14 +1931,38 @@ function totalDigits(id){
   const s = String(t == null ? '' : t).replace(/[^0-9\-]/g,'');
   return s;
 }
-// 行の読み上げ文言：「N番、物件名、総額 ◯◯円」
+// 読み上げ対象項目の選択状態
+function readOpts(){
+  return {
+    prop:  document.getElementById('readProp')?.checked  !== false,
+    total: document.getElementById('readTotal')?.checked !== false,
+    date:  document.getElementById('readDate')?.checked  !== false,
+  };
+}
+// 発生日(G列)を音声向けに「YYYY年M月D日」へ整形
+function occurDateSpeech(id){
+  const r = (typeof buildSheetRow === 'function') ? buildSheetRow(id) : null;
+  const s = r ? String(r[6]||'') : '';
+  const m = s.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+  return m ? `${+m[1]}年${+m[2]}月${+m[3]}日` : '';
+}
+// 行の読み上げ文言：選択された「物件名・総額・発生日」を並べる
 function rowSpeechText(id){
-  const ids = doneIdsInOrder();
-  const n = ids.indexOf(id) + 1;
-  const prop = (document.getElementById(`pr${id}`)?.value || '').trim();
-  const digits = totalDigits(id);
-  const amount = digits === '' ? '総額 未取得' : `総額 ${digits}円`;
-  return `${n>0?n+'番、':''}${prop?prop+'、':''}${amount}`;
+  const o = readOpts();
+  const parts = [];
+  if(o.prop){
+    const p = (document.getElementById(`pr${id}`)?.value || '').trim();
+    if(p) parts.push(p);
+  }
+  if(o.total){
+    const dg = totalDigits(id);
+    parts.push(dg === '' ? '総額 未取得' : `総額 ${dg}円`);
+  }
+  if(o.date){
+    const g = occurDateSpeech(id);
+    parts.push(g ? `発生日 ${g}` : '発生日 未取得');
+  }
+  return parts.join('、') || '読み上げ項目が選択されていません';
 }
 function speak(text, opts){
   if(!('speechSynthesis' in window)) return null;
@@ -1985,6 +2030,15 @@ function stepReadThrough(){
   }
   document.getElementById('btnReadAll')?.addEventListener('click', startReadThrough);
   document.getElementById('btnReadStop')?.addEventListener('click', stopReadThrough);
+  // 読み上げ項目チェックボックスの保存/復元
+  ['readProp','readTotal','readDate'].forEach(key => {
+    const el = document.getElementById(key);
+    if(!el) return;
+    try { const v = localStorage.getItem('ra_'+key); if(v === '0') el.checked = false; } catch(_){}
+    el.addEventListener('change', () => {
+      try { localStorage.setItem('ra_'+key, el.checked ? '1' : '0'); } catch(_){}
+    });
+  });
   setReadButtons();
 })();
 
