@@ -228,6 +228,7 @@
   .cell-edit.edited { border-color: var(--warning); background: rgba(232,151,42,.06); }
   .cell-edit.empty-id { background: rgba(232,151,42,.12); color: var(--warning); }
   .cell-edit.empty-id::placeholder { color: var(--warning); opacity: .8; }
+  .cell-edit.date-fallback { background: rgba(232,151,42,.14); border-color: rgba(232,151,42,.6); color: var(--warning); font-weight: 600; }
   /* 列ごとの最小幅（コメントは広め、金額系は狭め） */
   .cell-edit.col-id { min-width: 64px; }
   .cell-edit.col-b, .cell-edit.col-f, .cell-edit.col-j { min-width: 48px; }
@@ -1270,14 +1271,13 @@ const PROMPT = `この請求書・払込票から以下の情報を抽出して�
 
 2. planName: 料金プラン名。例：「スタンダードS」「従量電灯B」「低圧電力」など。記載がなければ空文字。
 
-3. receiptStamp: 領収日・支払日を読み取る。優先順位に従って探すこと。
-   - 【最優先】口座振替タイプ：領収証内に「振替月日」「振替日」「口座振替日」と書かれた日付があれば、それを支払日とする。（例：東京電力「電気料金等領収証」で口座振替の場合、右下あたりに「振替月日 4月30日」と印字されている。日付印スタンプが無くてもこの振替月日を必ず使うこと）
-   - 次点：日付印・収納印・領収日付印のスタンプ日付（電気・ガス・水道いずれも）
-   - 電気料金（東京電力・ビジネスTEPCOなど）：口座振替なら「振替月日」、そうでなければ「日附印」「収納印」のスタンプ
-   - 水道料金：「領収日付印」枠内のスタンプ日付。無い場合は「振替日」「口座振替日」の日付
-   - ガス料金：口座振替なら「振替日」、そうでなければ領収印・収納印のスタンプ
-   - 読み取れた場合：「MMDD支払」形式（例：4月30日→「0430支払」）
-   - どうしても日付が読み取れない場合のみ：「支払」
+3. receiptStamp: 発生日（＝支払日・領収日）を読み取り「MMDD支払」形式で返す。次の日付を、印字されているものから探すこと（上から優先）:
+   - 日附印・収納印・領収日付印などのスタンプ日付
+   - 「振替月日」「振替日」「口座振替日」
+   - 「口座振替予定日」「振替予定日」「今月分振替予定日」「お支払期限日」（請求書でスタンプが無い場合はこれらを使う）
+   - 「領収日」「領収月日」
+   - 例：4月30日 → 「0430支払」／令和8年3月10日 → 「0310支払」
+   - 上記のいずれかで月日が読み取れれば必ず返すこと。どれも全く読み取れない場合のみ「支払」。
 
 4. property: 物件名。下記「物件名マスタ」の中から該当する物件を特定し、必ず正式名称（マスタの先頭表記）をそのまま返すこと。
    - 払込票にはカナ表記や別表記（表記ゆれ）で書かれていることが多い。読み・別表記からマスタの正式名称へ変換する。
@@ -1297,7 +1297,10 @@ const PROMPT = `この請求書・払込票から以下の情報を抽出して�
    - 記載が無ければ空文字。
    - ※本体価格は totalAmount − taxAmount で自動計算されるため、ここでは総額から引く前の消費税額そのものを返すこと。
 
-8. receiptDate: 領収日・支払日を「YYYY/MM/DD」形式で。優先順位：①口座振替タイプなら「振替月日」「振替日」「口座振替日」の日付（電気・ガス・水道すべて。東京電力の口座振替領収証では日付印が無く「振替月日 4月30日」等が記載されているので必ずこれを使う）、②領収日付印・収納印のスタンプ日付。年が無ければ請求年月（「年 月分」欄の年）から推定。読み取れなければ空文字。receiptStampと同じ日付になるようにすること。
+8. receiptDate: 上記3と同じ日付を「YYYY/MM/DD」形式で返す。探す場所と優先順位は3と同じ（日附印/収納印 → 振替月日/振替日/口座振替日 → 口座振替予定日/振替予定日/今月分振替予定日/お支払期限日 → 領収日/領収月日）。
+   - 西暦（年）が印字されていない場合は、請求年月（「◯年◯月分」）または現在日付から最も近い年を推定し、必ず年を補完すること。月日が読めれば空文字にしない。
+   - 和暦（例:令和8年）は西暦へ変換する（令和 = 2018 + 年、つまり令和8年=2026年）。
+   - receiptStampと同じ日付にすること。
 
 9. periodStart / periodEnd: 使用期間（検針期間・ご使用期間）の開始日と終了日を「YYYY/MM/DD」形式で。「MM/DD～MM/DD」しか無い場合も年を補って返す。読み取れなければ空文字。
 
@@ -1531,31 +1534,77 @@ function buildComment(start, end, billingItem, location, planName, propertyName)
   return period;
 }
 
-// 発生日：領収日を優先、無ければ今日（YYYY/MM/DD）
-// 発生日を決定
-//   優先: 領収日スタンプ（stamp「0508支払」等の4桁MMDD） > receiptDate(YYYY/MM/DD) > 今日
-//   stampのMMDDには年が無いので【常に当年】を補う
-function resolveOccurDate(receiptDate, stamp){
-  const rd = String(receiptDate||'').trim();
-  const rdm = rd.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+// 年（西暦）が無い月日について、現在日に最も近い年を推定
+function inferYearForMD(month, day){
+  const today = new Date();
+  const cy = today.getFullYear();
+  let best = cy, bestDiff = Infinity;
+  for(const y of [cy-1, cy, cy+1]){
+    const dt = new Date(y, month-1, day);
+    const diff = Math.abs(dt.getTime() - today.getTime());
+    if(diff < bestDiff){ bestDiff = diff; best = y; }
+  }
+  return best;
+}
+// 和暦→西暦の基準（和暦N年 = base + N）
+const ERA_BASE = { '令和':2018, '平成':1988, '昭和':1925 };
+// 西暦/和暦/年なし を許容して {y,m,d} を返す（年なしは最近傍年を補完）。読めなければ null
+function parseFlexibleDate(str){
+  const s = String(str||'').trim();
+  if(!s) return null;
+  let m;
+  // 令和8年3月10日
+  if((m = s.match(/(令和|平成|昭和)\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/)))
+    return { y: ERA_BASE[m[1]] + parseInt(m[2],10), m:+m[3], d:+m[4] };
+  // YYYY/MM/DD（区切り / - .）
+  if((m = s.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/)))
+    return { y:+m[1], m:+m[2], d:+m[3] };
+  // YYYY年MM月DD日
+  if((m = s.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/)))
+    return { y:+m[1], m:+m[2], d:+m[3] };
+  // M月D日（年なし）
+  if((m = s.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*日/))){
+    const mm=+m[1], dd=+m[2];
+    if(mm>=1&&mm<=12&&dd>=1&&dd<=31) return { y: inferYearForMD(mm,dd), m:mm, d:dd };
+  }
+  // MM/DD（年なし）
+  if((m = s.match(/(?:^|\D)(\d{1,2})[\/\-.](\d{1,2})(?:\D|$)/))){
+    const mm=+m[1], dd=+m[2];
+    if(mm>=1&&mm<=12&&dd>=1&&dd<=31) return { y: inferYearForMD(mm,dd), m:mm, d:dd };
+  }
+  return null;
+}
+function fmtYMDobj(o){ return `${o.y}/${String(o.m).padStart(2,'0')}/${String(o.d).padStart(2,'0')}`; }
 
-  // stamp（例「0508支払」「0508」）から連続する4桁を拾い MMDD として解釈
+// 発生日を決定
+//   優先: 領収日スタンプ（stamp「0508支払」等の4桁MMDD） > receiptDate(和暦/西暦/年なし可) > 今日
+//   年（西暦）が無い場合は現在日から最近傍年を推定して補う
+function resolveOccurDate(receiptDate, stamp){
+  // stamp（例「0508支払」「0508」）から先頭の連続4桁を MMDD として解釈
   const st = String(stamp||'').trim();
-  if(st){
-    const sm = st.match(/(\d{2})(\d{2})/); // 先頭の4桁連続
-    if(sm){
-      const mm = parseInt(sm[1], 10), dd = parseInt(sm[2], 10);
-      if(mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31){
-        const y = new Date().getFullYear();  // 常に当年
-        return `${y}/${String(mm).padStart(2,'0')}/${String(dd).padStart(2,'0')}`;
-      }
+  const sm = st.match(/(\d{2})(\d{2})/);
+  if(sm){
+    const mm = parseInt(sm[1], 10), dd = parseInt(sm[2], 10);
+    if(mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31){
+      const y = inferYearForMD(mm, dd);
+      return `${y}/${String(mm).padStart(2,'0')}/${String(dd).padStart(2,'0')}`;
     }
   }
-  // stampが使えなければ receiptDate
-  if(rdm) return `${rdm[1]}/${String(rdm[2]).padStart(2,'0')}/${String(rdm[3]).padStart(2,'0')}`;
-  // どちらも無ければ今日
+  // stampが使えなければ receiptDate（和暦・年なしも許容）
+  const pd = parseFlexibleDate(receiptDate);
+  if(pd) return fmtYMDobj(pd);
+  // どちらも無ければ今日（＝読み取り失敗の仮値。転記表で警告表示する）
   const t = new Date();
   return `${t.getFullYear()}/${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}`;
+}
+
+// 発生日がスタンプ・receiptDateのどちらからも取れず「今日」にフォールバックしたか
+function isOccurDateFallback(receiptDate, stamp){
+  const st = String(stamp||'').trim();
+  const sm = st.match(/(\d{2})(\d{2})/);
+  if(sm){ const mm=+sm[1], dd=+sm[2]; if(mm>=1&&mm<=12&&dd>=1&&dd<=31) return false; }
+  if(parseFlexibleDate(receiptDate)) return false;
+  return true;
 }
 
 // ── Analyze ──────────────────────────────────────────────
@@ -1967,14 +2016,22 @@ function renderPreview(){
     const tr = document.createElement('tr');
     if(mismatch) tr.className = 'row-mismatch';
 
+    // 発生日(G=index6)が読み取れず「今日」を仮入力したか（手動上書きがあれば除外）
+    const dRow = files.get(id)?.data || {};
+    const stampVal = document.getElementById(`st${id}`)?.value ?? dRow.receiptStamp ?? '';
+    const dateFallback = (ov[6] === undefined || ov[6] === null || ov[6] === '')
+      && isOccurDateFallback(dRow.receiptDate, stampVal);
+
     // 行番号セル（クリックでPDFを開く／転記対象外・読み取りテーブルと同番号）
     let html = `<td class="pv-num clickable" data-id="${id}" title="クリックでこの行のPDFを開く">${rowNum.get(id)||''}</td>`;
     const cellHtml = (i) => {
       const edited = ov[i] !== undefined && ov[i] !== null;
       const warnId = (i===0 && !r[i]);
-      const cls = ['cell-edit', colClass[i], numCols.has(i)?'num':'', edited?'edited':'', warnId?'empty-id':''].filter(Boolean).join(' ');
+      const warnDate = (i===6 && dateFallback);
+      const cls = ['cell-edit', colClass[i], numCols.has(i)?'num':'', edited?'edited':'', warnId?'empty-id':'', warnDate?'date-fallback':''].filter(Boolean).join(' ');
       const ph = warnId ? '⚠️未取得' : '';
-      return `<td class="pv-cell"><input class="${cls}" data-id="${id}" data-col="${i}" value="${esc(String(r[i]))}" placeholder="${ph}"></td>`;
+      const titleAttr = warnDate ? ' title="発生日を読み取れませんでした（本日を仮入力）。振替予定日・領収日・日附印などを確認して修正してください"' : '';
+      return `<td class="pv-cell"><input class="${cls}"${titleAttr} data-id="${id}" data-col="${i}" value="${esc(String(r[i]))}" placeholder="${ph}"></td>`;
     };
     // A,B,C
     html += cellHtml(0) + cellHtml(1) + cellHtml(2);
@@ -2000,6 +2057,8 @@ function renderPreview(){
       if(!entry.data.cellOverride) entry.data.cellOverride = {};
       entry.data.cellOverride[col] = inp.value;
       inp.classList.add('edited');
+      // G発生日(col=6)を編集したら、フォールバック警告を解除
+      if(col === 6){ inp.classList.remove('date-fallback'); inp.removeAttribute('title'); }
       // G発生日(col=6)を編集したら、領収日欄「MMDD支払」へ逆連動
       if(col === 6){
         const m = String(inp.value).match(/\d{4}[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
