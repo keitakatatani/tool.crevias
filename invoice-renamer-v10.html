@@ -72,6 +72,7 @@
   .qword-chip:hover { background: rgba(240,149,106,.25); border-color: var(--accent2); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(240,149,106,.2); }
   .qword-chip:active { transform: translateY(0); }
   .qword-copied { font-size: 10px; color: var(--success); font-family: 'DM Mono', monospace; opacity: 0; transition: opacity .3s; margin-left: 4px; }
+  .pdfzoom-setting { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 
   /* Drop zone */
   .drop-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 32px 24px; text-align: center; cursor: pointer; transition: all .3s; background: var(--surface); position: relative; overflow: hidden; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; gap: 14px; box-shadow: 0 2px 12px var(--shadow); }
@@ -362,6 +363,21 @@
     <span class="qword-label">📋 よく使うワード</span>
     <span class="qword-chip" onclick="copyWord('共用')">共用</span>
     <span class="qword-copied" id="qwordCopied">コピーしました！</span>
+    <span class="pdfzoom-setting">
+      <span class="qword-label">🔍 PDF初期倍率</span>
+      <select id="pdfDefaultZoom" class="read-rate" title="PDFプレビューの表示倍率。PDFを切り替えてもこの倍率を維持します">
+        <option value="0.5">50%</option>
+        <option value="0.6">60%</option>
+        <option value="0.7">70%</option>
+        <option value="0.8">80%</option>
+        <option value="0.9">90%</option>
+        <option value="1">100%</option>
+        <option value="1.25">125%</option>
+        <option value="1.5">150%</option>
+        <option value="1.75">175%</option>
+        <option value="2">200%</option>
+      </select>
+    </span>
   </div>
 
   <!-- 物件一覧Excel投入（物件ID自動補完） -->
@@ -464,11 +480,12 @@
         <span class="fsc-label">🔊 読み合わせ</span>
         <button class="btn-read" id="btnReadAll" title="総額を上から順に読み上げ">▶ 読み上げ</button>
         <button class="btn-read stop" id="btnReadStop" title="停止" disabled>■ 停止</button>
-        <select id="readRate" class="read-rate" title="読み上げ速度">
-          <option value="0.8">遅い</option>
-          <option value="1" selected>標準</option>
-          <option value="1.3">速い</option>
-          <option value="1.6">最速</option>
+        <select id="readRate" class="read-rate" title="読み上げ速度（5段階）">
+          <option value="1">標準</option>
+          <option value="1.5">速い</option>
+          <option value="2" selected>高速</option>
+          <option value="2.5">超高速</option>
+          <option value="3">最速</option>
         </select>
         <span class="read-items" title="読み上げる項目を選択">
           <label class="read-link"><input type="checkbox" id="readProp" checked> 物件名</label>
@@ -522,7 +539,7 @@
       <div class="viewer-divider"></div>
       <div class="zoom-controls">
         <button class="btn-zoom" id="btnZoomOut" title="縮小">－</button>
-        <span class="zoom-label" id="zoomLabel" title="クリックで80%にリセット">80%</span>
+        <span class="zoom-label" id="zoomLabel" title="クリックで100%に戻す">80%</span>
         <button class="btn-zoom" id="btnZoomIn" title="拡大">＋</button>
       </div>
       <button class="btn-viewer-close" id="btnViewerClose" title="閉じる">✕</button>
@@ -998,6 +1015,15 @@ document.getElementById('btnClear').addEventListener('click', () => {
 let viewerPdf = null, viewerPage = 1, viewerTotal = 1, viewerZoom = 0.8;
 let viewerFileId = null;
 const ZOOM_STEPS = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0];
+// PDFの初期表示倍率（設定パネルで変更・保存）。PDFを切り替えてもこの倍率を維持する。
+try { const z = parseFloat(localStorage.getItem('pdf_default_zoom')||''); if(ZOOM_STEPS.includes(z)) viewerZoom = z; } catch(_){}
+// 現在の倍率を保存し、設定セレクトと表示を同期
+function persistZoom(){
+  try { localStorage.setItem('pdf_default_zoom', String(viewerZoom)); } catch(_){}
+  const sel = document.getElementById('pdfDefaultZoom');
+  if(sel){ const v = String(viewerZoom); if([...sel.options].some(o=>o.value===v)) sel.value = v; }
+  updateZoomLabel();
+}
 
 // PDFパネルが開いている間、本文の左余白をパネルの「実幅」に一致させる（隙間ゼロ）
 function syncContainerMargin(){
@@ -1067,7 +1093,7 @@ async function openPreview(id) {
     viewerPdf   = await pdfjsLib.getDocument({ data: ab }).promise;
     viewerTotal = viewerPdf.numPages;
     viewerPage  = 1;
-    viewerZoom  = 0.8;
+    // 倍率はリセットしない（設定した初期倍率／直前の倍率を維持）
     updateZoomLabel();
     await renderViewerPage(1);
   } catch(e) {
@@ -1110,16 +1136,31 @@ document.addEventListener('keydown', (e) => {
 document.getElementById('btnZoomOut').addEventListener('click', async () => {
   const idx = ZOOM_STEPS.findIndex(z => z >= viewerZoom);
   viewerZoom = idx > 0 ? ZOOM_STEPS[idx - 1] : ZOOM_STEPS[0];
-  updateZoomLabel(); if (viewerPdf) await renderViewerPage(viewerPage);
+  persistZoom(); if (viewerPdf) await renderViewerPage(viewerPage);
 });
 document.getElementById('btnZoomIn').addEventListener('click', async () => {
   const idx = ZOOM_STEPS.findLastIndex(z => z <= viewerZoom);
   viewerZoom = idx < ZOOM_STEPS.length - 1 ? ZOOM_STEPS[idx + 1] : ZOOM_STEPS[ZOOM_STEPS.length - 1];
-  updateZoomLabel(); if (viewerPdf) await renderViewerPage(viewerPage);
+  persistZoom(); if (viewerPdf) await renderViewerPage(viewerPage);
 });
 document.getElementById('zoomLabel').addEventListener('click', async () => {
-  viewerZoom = 0.8; updateZoomLabel(); if (viewerPdf) await renderViewerPage(viewerPage);
+  viewerZoom = 1.0; persistZoom(); if (viewerPdf) await renderViewerPage(viewerPage);
 });
+// 設定パネルの「PDF初期倍率」セレクタ
+(function initPdfZoomSetting(){
+  const sel = document.getElementById('pdfDefaultZoom');
+  if(!sel) return;
+  const v = String(viewerZoom);
+  if([...sel.options].some(o => o.value === v)) sel.value = v;
+  sel.addEventListener('change', async () => {
+    const z = parseFloat(sel.value);
+    if(!isNaN(z)){
+      viewerZoom = z;
+      persistZoom();
+      if(viewerPdf) await renderViewerPage(viewerPage);
+    }
+  });
+})();
 document.getElementById('btnViewerClose').addEventListener('click', () => {
   document.getElementById('pdfViewerWrap').classList.remove('open'); viewerPdf = null;
   document.body.classList.remove('pdf-open');
@@ -1280,8 +1321,11 @@ const PROMPT = `この請求書・払込票から以下の情報を抽出して�
 3. receiptStamp: 発生日（＝支払日・領収日）を読み取り「MMDD支払」形式で返す。次の日付を、印字されているものから探すこと（上から優先）:
    - 日附印・収納印・領収日付印などのスタンプ日付
    - 「振替月日」「振替日」「口座振替日」
-   - 「口座振替予定日」「振替予定日」「今月分振替予定日」「お支払期限日」（請求書でスタンプが無い場合はこれらを使う）
+   - 「口座振替予定日」「振替予定日」「今月分振替予定日」
+   - 「次回ご請求予定日」
+   - 「お支払期限日」
    - 「領収日」「領収月日」
+   - ※「お支払期限日」と「次回ご請求予定日」の2つしか無い場合は、必ず「次回ご請求予定日」を使うこと。
    - 例：4月30日 → 「0430支払」／令和8年3月10日 → 「0310支払」
    - 上記のいずれかで月日が読み取れれば必ず返すこと。どれも全く読み取れない場合のみ「支払」。
 
@@ -1303,7 +1347,8 @@ const PROMPT = `この請求書・払込票から以下の情報を抽出して�
    - 記載が無ければ空文字。
    - ※本体価格は totalAmount − taxAmount で自動計算されるため、ここでは総額から引く前の消費税額そのものを返すこと。
 
-8. receiptDate: 上記3と同じ日付を「YYYY/MM/DD」形式で返す。探す場所と優先順位は3と同じ（日附印/収納印 → 振替月日/振替日/口座振替日 → 口座振替予定日/振替予定日/今月分振替予定日/お支払期限日 → 領収日/領収月日）。
+8. receiptDate: 上記3と同じ日付を「YYYY/MM/DD」形式で返す。探す場所と優先順位は3と同じ（日附印/収納印 → 振替月日/振替日/口座振替日 → 口座振替予定日/振替予定日/今月分振替予定日 → 次回ご請求予定日 → お支払期限日 → 領収日/領収月日）。
+   - ※「お支払期限日」と「次回ご請求予定日」の2つしか記載が無い場合は、必ず「次回ご請求予定日」の日付を使うこと。
    - 【重要・和暦変換】和暦は次の対応で西暦へ変換する：令和N年 = 2018 + N。すなわち **令和8年 = 2026年**、令和7年 = 2025年、令和6年 = 2024年。「令和8年」を2027年などにしないこと。
    - 書類に年（西暦または和暦）が印字されている場合は、その年を必ずそのまま使う。前後の年に勝手にずらさない。
    - 年がどこにも印字されていない場合のみ、請求年月または現在日付から最も近い年を推定して補う。月日が読めれば空文字にしない。
@@ -1912,8 +1957,8 @@ function getRowTotal(id){
 }
 
 // ── 音声読み上げ（読み合わせ用）─────────────────────────────
-let speakRate = 1.0;
-try { const s = parseFloat(localStorage.getItem('read_rate')||''); if(s>=0.5 && s<=2) speakRate = s; } catch(_){}
+let speakRate = 2.0;
+try { const s = parseFloat(localStorage.getItem('read_rate')||''); if(s>=0.5 && s<=4) speakRate = s; } catch(_){}
 let jaVoice = null;
 function pickJaVoice(){
   try {
@@ -1960,7 +2005,7 @@ function rowSpeechText(id){
   }
   if(o.date){
     const g = occurDateSpeech(id);
-    parts.push(g ? `発生日 ${g}` : '発生日 未取得');
+    parts.push(g ? `はっせいび ${g}` : 'はっせいび 未取得');
   }
   return parts.join('、') || '読み上げ項目が選択されていません';
 }
@@ -2023,6 +2068,7 @@ function stepReadThrough(){
   if(rate){
     const opt = [...rate.options].find(o => parseFloat(o.value) === speakRate);
     if(opt) rate.value = opt.value;
+    else { speakRate = parseFloat(rate.value) || 2; } // 選択肢に無い旧保存値はセレクト既定に合わせる
     rate.addEventListener('change', () => {
       speakRate = parseFloat(rate.value) || 1;
       try { localStorage.setItem('read_rate', String(speakRate)); } catch(_){}
