@@ -204,7 +204,7 @@
   .transfer-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
   .transfer-title { font-size: 13px; font-weight: 700; color: var(--text); }
   .transfer-hint { font-size: 11px; color: var(--text-muted); }
-  .readaloud-ctrl { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .readaloud-ctrl { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .readaloud-ctrl + .font-size-ctrl { margin-left: 0; }
   .btn-read { height: 26px; padding: 0 10px; border-radius: 7px; background: var(--accent); border: 1px solid var(--accent); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all .15s; }
   .btn-read:hover:not(:disabled) { opacity: .88; }
@@ -486,6 +486,12 @@
           <option value="2" selected>高速</option>
           <option value="2.5">超高速</option>
           <option value="3">最速</option>
+        </select>
+        <select id="readVoice" class="read-rate" title="読み上げに使う声（お使いの端末にインストールされた日本語音声）"></select>
+        <select id="readTone" class="read-rate" title="声のトーン（高さ）を切替">
+          <option value="normal">ふつう</option>
+          <option value="cute">かわいい系（高め）</option>
+          <option value="ikeoji">イケオジ系（低め）</option>
         </select>
         <span class="read-items" title="読み上げる項目を選択">
           <label class="read-link"><input type="checkbox" id="readProp" checked> 物件名</label>
@@ -1959,16 +1965,65 @@ function getRowTotal(id){
 // ── 音声読み上げ（読み合わせ用）─────────────────────────────
 let speakRate = 2.0;
 try { const s = parseFloat(localStorage.getItem('read_rate')||''); if(s>=0.5 && s<=4) speakRate = s; } catch(_){}
-let jaVoice = null;
-function pickJaVoice(){
+let speakPitch = 1.0;
+try { const p = parseFloat(localStorage.getItem('read_pitch')||''); if(p>=0.3 && p<=2) speakPitch = p; } catch(_){}
+let selectedVoiceName = null;
+try { selectedVoiceName = localStorage.getItem('read_voice') || null; } catch(_){}
+let jaVoices = [];   // 端末の日本語音声一覧
+let jaVoice = null;  // 既定の日本語音声
+
+// 声の性別を名前から推定するためのヒント（端末により音声名は異なる）
+const FEMALE_HINTS = ['kyoko','o-ren','oren','haruka','sayaka','nanami','ayumi','female','女性','google 日本語','google japanese','mizuki','sinji-f'];
+const MALE_HINTS   = ['otoya','ichiro','hattori','male','男性','daichi','sjun','jun','takeshi','naoki'];
+
+function loadVoices(){
   try {
     const vs = speechSynthesis.getVoices() || [];
-    jaVoice = vs.find(v => /ja(-|_)?JP/i.test(v.lang) || /japan/i.test(v.name)) || null;
+    jaVoices = vs.filter(v => /ja(-|_)?JP/i.test(v.lang) || /japan|日本/i.test(v.name));
+    jaVoice  = jaVoices[0] || vs.find(v => /ja/i.test(v.lang)) || null;
+    populateVoiceSelect();
   } catch(_){}
 }
+function populateVoiceSelect(){
+  const sel = document.getElementById('readVoice');
+  if(!sel) return;
+  const cur = selectedVoiceName || (jaVoice && jaVoice.name) || '';
+  sel.innerHTML = '<option value="">自動</option>' + jaVoices.map(v =>
+    `<option value="${String(v.name).replace(/"/g,'&quot;')}">${v.name}</option>`).join('');
+  if([...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+function currentVoice(){
+  if(selectedVoiceName){
+    const v = jaVoices.find(v => v.name === selectedVoiceName);
+    if(v) return v;
+  }
+  return jaVoice;
+}
+function pickVoiceByGender(gender){
+  const hints = gender === 'female' ? FEMALE_HINTS : MALE_HINTS;
+  return jaVoices.find(v => hints.some(h => v.name.toLowerCase().includes(h))) || null;
+}
+// トーン切替：ピッチ調整＋（可能なら）性別に合う音声を自動選択
+function applyTone(tone){
+  if(tone === 'cute'){
+    speakPitch = 1.5;
+    const v = pickVoiceByGender('female'); if(v) selectedVoiceName = v.name;
+  } else if(tone === 'ikeoji'){
+    speakPitch = 0.6;
+    const v = pickVoiceByGender('male'); if(v) selectedVoiceName = v.name;
+  } else {
+    speakPitch = 1.0;
+  }
+  try {
+    localStorage.setItem('read_tone', tone);
+    localStorage.setItem('read_pitch', String(speakPitch));
+    localStorage.setItem('read_voice', selectedVoiceName || '');
+  } catch(_){}
+  populateVoiceSelect();
+}
 if('speechSynthesis' in window){
-  pickJaVoice();
-  speechSynthesis.onvoiceschanged = pickJaVoice;
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
 }
 // 数字を読み上げ用にサニタイズ（カンマ・円など除去、数字のみ）
 function totalDigits(id){
@@ -2014,8 +2069,10 @@ function speak(text, opts){
   try {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP';
-    if(jaVoice) u.voice = jaVoice;
+    const v = currentVoice();
+    if(v) u.voice = v;
     u.rate = speakRate;
+    u.pitch = speakPitch;
     if(opts && opts.onend) u.onend = opts.onend;
     speechSynthesis.speak(u);
     return u;
@@ -2076,6 +2133,21 @@ function stepReadThrough(){
   }
   document.getElementById('btnReadAll')?.addEventListener('click', startReadThrough);
   document.getElementById('btnReadStop')?.addEventListener('click', stopReadThrough);
+  // 声の選択
+  const voiceSel = document.getElementById('readVoice');
+  if(voiceSel){
+    populateVoiceSelect();
+    voiceSel.addEventListener('change', () => {
+      selectedVoiceName = voiceSel.value || null;
+      try { localStorage.setItem('read_voice', selectedVoiceName || ''); } catch(_){}
+    });
+  }
+  // トーン（ピッチ）の選択
+  const toneSel = document.getElementById('readTone');
+  if(toneSel){
+    try { const t = localStorage.getItem('read_tone'); if(t) toneSel.value = t; } catch(_){}
+    toneSel.addEventListener('change', () => applyTone(toneSel.value));
+  }
   // 読み上げ項目チェックボックスの保存/復元
   ['readProp','readTotal','readDate'].forEach(key => {
     const el = document.getElementById(key);
