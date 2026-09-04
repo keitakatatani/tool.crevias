@@ -1365,7 +1365,7 @@ const PROMPT = `この請求書・払込票から以下の情報を抽出して�
    - 年がどこにも印字されていない場合のみ、請求年月または現在日付から最も近い年を推定して補う。月日が読めれば空文字にしない。
    - receiptStampと同じ日付にすること。
 
-9. periodStart / periodEnd: 使用期間（検針期間・ご使用期間）の開始日と終了日を「YYYY/MM/DD」形式で。「MM/DD～MM/DD」しか無い場合も年を補って返す。読み取れなければ空文字。
+9. periodStart / periodEnd: 使用期間（検針期間・ご使用期間）の開始日と終了日を「YYYY/MM/DD」形式で。月日を正確に読み取ること（コメント欄の年は発生日を基準に自動計算するため、年は多少不確かでも月日が正しければよい）。和暦の年数字は「8」と「6」など読み間違いやすいので、年月分欄・領収印の西暦などと突き合わせて確定すること。「MM/DD～MM/DD」しか無い場合はそのまま月日を返す。読み取れなければ空文字。
 
 10. vendor: 請求元の会社名・事業者名（例:「東京電力エナジーパートナー」「東京都水道局」「東京ガス」）。読み取れなければ空文字。
 
@@ -1429,7 +1429,8 @@ async function analyze(file) {
     comment:      buildComment(         // コメント欄（入力規則準拠）
       aiData.periodStart, aiData.periodEnd,
       aiData.billingItem || '', aiData.location || '',
-      aiData.planName || '', norm.name
+      aiData.planName || '', norm.name,
+      resolveOccurDate(aiData.receiptDate, aiData.receiptStamp)  // 発生日（年の基準）
     ),
   };
 }
@@ -1501,26 +1502,36 @@ function parseYMD(dateStr){
   return { y: m[1] ? parseInt(m[1],10) : null, m: parseInt(m[2],10), d: parseInt(m[3],10) };
 }
 
-// 使用期間 → 「令和X年X月X日～X月X日」形式の日付文字列を生成
-//   同一年なら終了日は「月日」のみ、年をまたぐ場合は終了日にも令和年を付す
-function buildPeriodText(start, end){
+// 使用期間 → 「YYYY年M月D日～M月D日」形式（西暦）を生成
+//   年は【発生日（領収日）の西暦】を基準に、使用期間の月から導出する：
+//   ・使用期間の月が発生日の月より後 → 前年（例：1〜2月入力で前年12月分）
+//   ・同一年なら終了日は「月日」のみ、年をまたぐ場合は終了日にも西暦を付す
+//   発生日が無ければAIが読んだ年をそのまま使う
+function buildPeriodText(start, end, occurDate){
   const s = parseYMD(start), e = parseYMD(end);
+  const ref = parseYMD(occurDate);
+  const refY = ref && ref.y ? ref.y : null;
+  const refM = ref ? ref.m : null;
+  const yearOf = (part) => {
+    if(!part) return null;
+    if(refY) return (refM && part.m > refM) ? refY - 1 : refY;
+    return part.y || null;
+  };
   if(s && e){
-    const sy = s.y || (e.y || null);
-    const ey = e.y || sy;
-    const head = sy ? `令和${toReiwaYear(sy)}年` : '';
+    const sy = yearOf(s), ey = yearOf(e);
     if(sy && ey && sy !== ey){
-      return `${head}${s.m}月${s.d}日～令和${toReiwaYear(ey)}年${e.m}月${e.d}日`;
+      return `${sy}年${s.m}月${s.d}日～${ey}年${e.m}月${e.d}日`;
     }
+    const head = sy ? `${sy}年` : '';
     return `${head}${s.m}月${s.d}日～${e.m}月${e.d}日`;
   }
   if(s){
-    const head = s.y ? `令和${toReiwaYear(s.y)}年` : '';
-    return `${head}${s.m}月${s.d}日～`;
+    const sy = yearOf(s);
+    return `${sy ? `${sy}年` : ''}${s.m}月${s.d}日～`;
   }
   if(e){
-    const head = e.y ? `令和${toReiwaYear(e.y)}年` : '';
-    return `${head}～${e.m}月${e.d}日`;
+    const ey = yearOf(e);
+    return `${ey ? `${ey}年` : ''}～${e.m}月${e.d}日`;
   }
   return '';
 }
@@ -1558,8 +1569,8 @@ function isRoomLocation(loc){
 //   billingItem: 電気料金/水道料金/ガス料金
 //   location: 場所（号室 or 共用）, planName: プラン（電気のみ使用）
 //   propertyName: 正式物件名（棟情報があれば接頭辞に）
-function buildComment(start, end, billingItem, location, planName, propertyName){
-  const period = buildPeriodText(start, end);
+function buildComment(start, end, billingItem, location, planName, propertyName, occurDate){
+  const period = buildPeriodText(start, end, occurDate);
   const item = String(billingItem||'');
   const isElec  = item.includes('電気');
   const isWater = item.includes('水道');
@@ -1804,7 +1815,7 @@ function buildSheetRow(id){
   // 手動編集（commentOverride）があればそれを優先
   const comment = (d.commentOverride !== undefined && d.commentOverride !== null)
     ? d.commentOverride
-    : buildComment(d.periodStart, d.periodEnd, billItem, location, planName, propName);
+    : buildComment(d.periodStart, d.periodEnd, billItem, location, planName, propName, occurDate);
 
   const row = [
     propId,                              // A: 物件ID
