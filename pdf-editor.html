@@ -285,7 +285,18 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
       <button class="page-nav-btn" id="drawPrevPage">‹</button>
       <span class="page-info" id="drawPageInfo">1 / 1</span>
       <button class="page-nav-btn" id="drawNextPage">›</button>
+      
       <span style="flex:1"></span>
+      
+      <div style="display:flex;gap:6px;align-items:center;border-right:1px solid var(--border);padding-right:10px;margin-right:10px">
+        <label style="font-size:11px;color:var(--text-muted);white-space:nowrap">表示：</label>
+        <button class="page-nav-btn" onclick="fitToPage()" title="ページ全体に合わせる">⊟</button>
+        <button class="page-nav-btn" onclick="zoomOut()" title="縮小">−</button>
+        <span class="page-info" id="zoomLevel" style="min-width:50px">100%</span>
+        <button class="page-nav-btn" onclick="zoomIn()" title="拡大">＋</button>
+        <button class="page-nav-btn" onclick="rotatePageCw()" title="右回転(90°)">⟲</button>
+      </div>
+      
       <span style="font-size:11px;color:var(--text-muted)">
         <span class="kbd">Ctrl+Z</span> 元に戻す &nbsp;
         <span class="kbd">Ctrl+Y</span> やり直し &nbsp;
@@ -358,6 +369,7 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
           <div class="swatch" style="background:#3a7bd5" data-color="#3a7bd5" onclick="setColor(this)"></div>
           <div class="swatch" style="background:#7c5cbf" data-color="#7c5cbf" onclick="setColor(this)"></div>
           <div class="swatch" style="background:#2a1f2a" data-color="#2a1f2a" onclick="setColor(this)"></div>
+          <div class="swatch" style="background:#ffffff;border:1px solid #ccc" data-color="#ffffff" onclick="setColor(this)" title="白"></div>
         </div>
         <input type="color" id="customColor" value="#e05a7a" oninput="setCustomColor(this.value)"
           style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:1px;background:none" title="カスタムカラー">
@@ -378,6 +390,7 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
           <div class="swatch" style="background:#2baa72" data-color="#2baa72" onclick="applySelColor(this)"></div>
           <div class="swatch" style="background:#3a7bd5" data-color="#3a7bd5" onclick="applySelColor(this)"></div>
           <div class="swatch" style="background:#7c5cbf" data-color="#7c5cbf" onclick="applySelColor(this)"></div>
+          <div class="swatch" style="background:#ffffff;border:1px solid #ccc" data-color="#ffffff" onclick="applySelColor(this)" title="白"></div>
           <div class="swatch" style="background:#2a1f2a" data-color="#2a1f2a" onclick="applySelColor(this)"></div>
           <input type="color" id="selCustomColor" value="#e05a7a" oninput="applySelCustomColor(this.value)"
             style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:1px;background:none" title="カスタムカラー">
@@ -1007,7 +1020,9 @@ let drawEntry = null;      // files内のエントリ
 let drawPdfJsDoc = null;
 let drawCurrentPage = 1;
 let drawTotalPages = 1;
-let drawScale = 1.4;
+let drawScale = 1.4;        // 基本スケール
+let drawZoom = 1.0;         // ズーム倍率（1.0 = 100%）
+let drawRotation = 0;       // ページ回転（度数：0, 90, 180, 270）
 let drawVp = null;
 
 let currentTool = 'line';
@@ -1035,6 +1050,8 @@ async function openDraw(id) {
   drawPdfJsDoc = f.doc;
   drawTotalPages = f.pageCount;
   drawCurrentPage = 1;
+  drawZoom = 1.0;
+  drawRotation = 0;
   pageShapes.clear(); undoStacks.clear(); redoStacks.clear();
   polygonPoints = []; isDrawing = false;
   document.getElementById('drawFileName').textContent = f.name;
@@ -1045,17 +1062,67 @@ async function openDraw(id) {
 function closeDraw() {
   document.getElementById('drawWorkspace').style.display = 'none';
   drawEntry = null;
+  drawZoom = 1.0;
+  drawRotation = 0;
   pageShapes.clear(); undoStacks.clear(); redoStacks.clear();
 }
 
 async function renderDrawPage() {
   hideSelBox(); selectedIdx = -1;
-  drawVp = await renderPageToCanvas(drawPdfJsDoc, drawCurrentPage, pdfRenderCanvas, drawScale);
+  const effectiveScale = drawScale * drawZoom;
+  drawVp = await renderPageToCanvas(drawPdfJsDoc, drawCurrentPage, pdfRenderCanvas, effectiveScale);
+  
+  // 回転を反映
+  if (drawRotation % 180 === 90) {
+    // 90度または270度回転の場合は幅と高さが入れ替わる
+    [drawVp.width, drawVp.height] = [drawVp.height, drawVp.width];
+  }
+  
   drawCanvas.width = drawVp.width;
   drawCanvas.height = drawVp.height;
   document.getElementById('drawPageInfo').textContent = `${drawCurrentPage} / ${drawTotalPages}`;
   document.getElementById('drawPrevPage').disabled = drawCurrentPage <= 1;
   document.getElementById('drawNextPage').disabled = drawCurrentPage >= drawTotalPages;
+  updateZoomDisplay();
+  redrawAllShapes();
+}
+
+// ── ズーム・回転コントロール ──
+function fitToPage() {
+  drawZoom = 1.0;
+  renderDrawPage();
+}
+function zoomIn() {
+  drawZoom = Math.min(drawZoom + 0.2, 3.0);
+  renderDrawPage();
+}
+function zoomOut() {
+  drawZoom = Math.max(drawZoom - 0.2, 0.5);
+  renderDrawPage();
+}
+function updateZoomDisplay() {
+  const percent = Math.round(drawZoom * 100);
+  document.getElementById('zoomLevel').textContent = percent + '%';
+}
+function rotatePageCw() {
+  drawRotation = (drawRotation + 90) % 360;
+  const page = pdfRenderCanvas;
+  const ctx = page.getContext('2d');
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = page.width;
+  tempCanvas.height = page.height;
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(page, 0, 0);
+  
+  // 90度回転
+  page.width = tempCanvas.height;
+  page.height = tempCanvas.width;
+  ctx.translate(page.width / 2, page.height / 2);
+  ctx.rotate(Math.PI / 2);
+  ctx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
+  
+  drawCanvas.width = page.width;
+  drawCanvas.height = page.height;
   redrawAllShapes();
 }
 
