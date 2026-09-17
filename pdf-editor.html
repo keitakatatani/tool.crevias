@@ -104,6 +104,7 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
 .file-icon-wrap{width:36px;height:36px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,rgba(224,90,122,.12),rgba(240,149,106,.12));display:flex;align-items:center;justify-content:center;font-size:18px}
 .file-info{flex:1;min-width:0;cursor:pointer}
 .file-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.badge-decrypted{font-size:9px;font-family:'DM Mono',monospace;background:rgba(58,123,213,.12);color:#3a7bd5;border:1px solid rgba(58,123,213,.3);border-radius:5px;padding:1px 6px;flex-shrink:0;margin-left:5px}
 .badge-annotated{font-size:9px;font-family:'DM Mono',monospace;background:rgba(43,170,114,.12);color:var(--success);border:1px solid rgba(43,170,114,.3);border-radius:5px;padding:1px 6px;flex-shrink:0}
 .file-meta{font-size:11px;color:var(--text-muted);margin-top:2px;font-family:'DM Mono',monospace}
 .file-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
@@ -763,6 +764,298 @@ h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-
 </div>
 
 <script>
+// ════════════════════════════════════════════════════════════
+// PDF 復号（標準セキュリティハンドラ / ユーザーパスワード無しの文書）
+//   pdf-lib は復号機能を持たず、ignoreEncryption を付けると
+//   暗号化されたままのデータを平文として書き出して中身が壊れる。
+//   そのためここで正しく平文に戻してから結合・編集する。
+//   対応: RC4(V1/V2) / AES-128(AESV2) / AES-256(AESV3 R5・R6)
+// ════════════════════════════════════════════════════════════
+const PDFCrypt = (() => {
+  const subtle = crypto.subtle;
+
+  function concat(...arrs) {
+    let n = 0; for (const a of arrs) n += a.length;
+    const out = new Uint8Array(n);
+    let o = 0; for (const a of arrs) { out.set(a, o); o += a.length; }
+    return out;
+  }
+
+  // ── MD5 ──
+  const MD5_S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+                 5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+                 4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+                 6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  const MD5_K = (() => {
+    const K = new Int32Array(64);
+    for (let i = 0; i < 64; i++) K[i] = (Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296)) | 0;
+    return K;
+  })();
+  function md5(bytes) {
+    const len = bytes.length;
+    const padLen = ((len + 1 + 8 + 63) & ~63);
+    const msg = new Uint8Array(padLen);
+    msg.set(bytes); msg[len] = 0x80;
+    const dv = new DataView(msg.buffer);
+    const bitLen = len * 8;
+    dv.setUint32(padLen - 8, bitLen >>> 0, true);
+    dv.setUint32(padLen - 4, Math.floor(bitLen / 4294967296), true);
+    let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+    const M = new Int32Array(16);
+    for (let off = 0; off < padLen; off += 64) {
+      for (let i = 0; i < 16; i++) M[i] = dv.getInt32(off + i * 4, true);
+      let A = a0, B = b0, C = c0, D = d0;
+      for (let i = 0; i < 64; i++) {
+        let F, g;
+        if (i < 16) { F = (B & C) | (~B & D); g = i; }
+        else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
+        else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) % 16; }
+        else { F = C ^ (B | ~D); g = (7 * i) % 16; }
+        F = (F + A + MD5_K[i] + M[g]) | 0;
+        A = D; D = C; C = B;
+        B = (B + ((F << MD5_S[i]) | (F >>> (32 - MD5_S[i])))) | 0;
+      }
+      a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+    }
+    const out = new Uint8Array(16), odv = new DataView(out.buffer);
+    odv.setInt32(0, a0, true); odv.setInt32(4, b0, true);
+    odv.setInt32(8, c0, true); odv.setInt32(12, d0, true);
+    return out;
+  }
+
+  // ── RC4 ──
+  function rc4(key, data) {
+    const S = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) S[i] = i;
+    let j = 0;
+    for (let i = 0; i < 256; i++) {
+      j = (j + S[i] + key[i % key.length]) & 255;
+      const t = S[i]; S[i] = S[j]; S[j] = t;
+    }
+    const out = new Uint8Array(data.length);
+    let i = 0; j = 0;
+    for (let k = 0; k < data.length; k++) {
+      i = (i + 1) & 255; j = (j + S[i]) & 255;
+      const t = S[i]; S[i] = S[j]; S[j] = t;
+      out[k] = data[k] ^ S[(S[i] + S[j]) & 255];
+    }
+    return out;
+  }
+
+  // パディング検証を伴わないAES-CBC復号を行うための補助ブロック
+  async function padBlockFor(key, lastCipherBlock) {
+    const ek = await subtle.importKey('raw', key, { name: 'AES-CBC' }, false, ['encrypt']);
+    return new Uint8Array(await subtle.encrypt({ name: 'AES-CBC', iv: lastCipherBlock }, ek, new Uint8Array(0)));
+  }
+  // 先頭16バイトをIVとするAES-CBC復号
+  async function aesDecryptWithIv(key, data) {
+    if (data.length <= 16) return new Uint8Array(0);
+    const iv = data.slice(0, 16);
+    let body = data.slice(16);
+    const rem = body.length % 16;
+    if (rem) body = body.slice(0, body.length - rem);
+    if (!body.length) return new Uint8Array(0);
+    const dk = await subtle.importKey('raw', key, { name: 'AES-CBC' }, false, ['decrypt']);
+    try {
+      return new Uint8Array(await subtle.decrypt({ name: 'AES-CBC', iv }, dk, body));
+    } catch (_) {
+      // パディングが規格通りでないPDFでも読めるようにする
+      const extra = await padBlockFor(key, body.slice(body.length - 16));
+      const out = await subtle.decrypt({ name: 'AES-CBC', iv }, dk, concat(body, extra));
+      return new Uint8Array(out);
+    }
+  }
+  async function aesEncryptNoPad(key, iv, data) {
+    const ek = await subtle.importKey('raw', key, { name: 'AES-CBC' }, false, ['encrypt']);
+    const out = new Uint8Array(await subtle.encrypt({ name: 'AES-CBC', iv }, ek, data));
+    return out.slice(0, data.length);
+  }
+  async function sha(bits, data) {
+    return new Uint8Array(await subtle.digest(bits === 256 ? 'SHA-256' : bits === 384 ? 'SHA-384' : 'SHA-512', data));
+  }
+
+  const PAD = new Uint8Array([
+    0x28,0xBF,0x4E,0x5E,0x4E,0x75,0x8A,0x41,0x64,0x00,0x4E,0x56,0xFF,0xFA,0x01,0x08,
+    0x2E,0x2E,0x00,0xB6,0xD0,0x68,0x3E,0x80,0x2F,0x0C,0xA9,0xFE,0x64,0x53,0x69,0x7A]);
+
+  function fileKeyLegacy({ R, O, P, id0, lengthBits, encryptMetadata }) {
+    const pbuf = new Uint8Array(4);
+    new DataView(pbuf.buffer).setInt32(0, P, true);
+    let input = concat(PAD, O, pbuf, id0);
+    if (R >= 4 && !encryptMetadata) input = concat(input, new Uint8Array([255, 255, 255, 255]));
+    let hash = md5(input);
+    const n = R === 2 ? 5 : Math.max(5, Math.floor((lengthBits || 40) / 8));
+    if (R >= 3) for (let i = 0; i < 50; i++) hash = md5(hash.slice(0, n));
+    return hash.slice(0, n);
+  }
+
+  // ISO 32000-2 アルゴリズム 2.B
+  async function hash2B(password, salt, udata) {
+    let K = await sha(256, concat(password, salt, udata));
+    let round = 0;
+    for (;;) {
+      const one = concat(password, K, udata);
+      const K1 = new Uint8Array(one.length * 64);
+      for (let i = 0; i < 64; i++) K1.set(one, i * one.length);
+      const E = await aesEncryptNoPad(K.slice(0, 16), K.slice(16, 32), K1);
+      let sum = 0;
+      for (let i = 0; i < 16; i++) sum += E[i];
+      K = await sha([256, 384, 512][sum % 3], E);
+      round++;
+      if (round >= 64 && E[E.length - 1] <= round - 32) break;
+    }
+    return K.slice(0, 32);
+  }
+
+  async function fileKeyV5({ R, U, UE }) {
+    const pw = new Uint8Array(0);
+    const keySalt = U.slice(40, 48);
+    const inter = R === 5 ? await sha(256, concat(pw, keySalt)) : await hash2B(pw, keySalt, new Uint8Array(0));
+    const dk = await subtle.importKey('raw', inter, { name: 'AES-CBC' }, false, ['decrypt']);
+    const extra = await padBlockFor(inter, UE.slice(UE.length - 16));
+    const out = new Uint8Array(await subtle.decrypt({ name: 'AES-CBC', iv: new Uint8Array(16) }, dk, concat(UE, extra)));
+    return out.slice(0, 32);
+  }
+  // 空のユーザーパスワードで開ける文書かどうか
+  async function isEmptyUserPassword(info) {
+    if (info.V >= 5) {
+      const vSalt = info.U.slice(32, 40);
+      const want = info.U.slice(0, 32);
+      const got = info.R === 5
+        ? await sha(256, concat(new Uint8Array(0), vSalt))
+        : await hash2B(new Uint8Array(0), vSalt, new Uint8Array(0));
+      return got.every((b, i) => b === want[i]);
+    }
+    return true; // R2〜R4は鍵を作って実データで判定する
+  }
+
+  function objectKey(fileKey, num, gen, isAes) {
+    const ext = new Uint8Array(isAes ? 9 : 5);
+    ext[0] = num & 255; ext[1] = (num >> 8) & 255; ext[2] = (num >> 16) & 255;
+    ext[3] = gen & 255; ext[4] = (gen >> 8) & 255;
+    if (isAes) { ext[5] = 0x73; ext[6] = 0x41; ext[7] = 0x6C; ext[8] = 0x54; }
+    return md5(concat(fileKey, ext)).slice(0, Math.min(fileKey.length + 5, 16));
+  }
+
+  async function makeDecryptor(info) {
+    let fileKey, cfm;
+    if (info.V >= 5) { fileKey = await fileKeyV5(info); cfm = 'AESV3'; }
+    else { fileKey = fileKeyLegacy(info); cfm = info.cfm || (info.V === 4 ? 'AESV2' : 'V2'); }
+    const isAes = cfm === 'AESV2' || cfm === 'AESV3';
+    return {
+      cfm, keyBits: fileKey.length * 8,
+      async decrypt(data, num, gen) {
+        if (cfm === 'Identity' || !data || !data.length) return data;
+        if (cfm === 'AESV3') return aesDecryptWithIv(fileKey, data);
+        const k = objectKey(fileKey, num, gen, isAes);
+        return isAes ? aesDecryptWithIv(k, data) : rc4(k, data);
+      }
+    };
+  }
+
+  return { makeDecryptor, isEmptyUserPassword, md5, rc4 };
+})();
+
+// ── /Encrypt 辞書の読み取り（pdf-lib のオブジェクトから） ──
+function readEncryptInfo(ctx) {
+  const { PDFName } = PDFLib;
+  const encRef = ctx.trailerInfo.Encrypt;
+  if (!encRef) return null;
+  const enc = ctx.lookup(encRef);
+  if (!enc || !enc.get) return null;
+  const num = k => { const v = enc.get(PDFName.of(k)); return v && v.asNumber ? v.asNumber() : undefined; };
+  const bytes = k => {
+    const v = enc.get(PDFName.of(k));
+    return v && v.asBytes ? v.asBytes() : new Uint8Array(0);
+  };
+  const filter = enc.get(PDFName.of('Filter'));
+  if (filter && filter.toString() !== '/Standard') {
+    return { unsupported: filter.toString() };
+  }
+  const V = num('V') || 0, R = num('R') || 0;
+  let cfm = null;
+  const CF = enc.get(PDFName.of('CF'));
+  const StmF = enc.get(PDFName.of('StmF'));
+  if (CF && StmF && CF.get) {
+    const f = CF.get(PDFName.of(StmF.toString().replace('/', '')));
+    if (f && f.get) {
+      const m = f.get(PDFName.of('CFM'));
+      if (m) cfm = m.toString().replace('/', '');
+    }
+  }
+  const em = enc.get(PDFName.of('EncryptMetadata'));
+  const idArr = ctx.trailerInfo.ID;
+  let id0 = new Uint8Array(0);
+  if (idArr && idArr.get) {
+    const e0 = idArr.get(0);
+    if (e0 && e0.asBytes) id0 = e0.asBytes();
+  }
+  return {
+    V, R, O: bytes('O'), U: bytes('U'), OE: bytes('OE'), UE: bytes('UE'),
+    P: num('P') || 0, lengthBits: num('Length') || 40, cfm,
+    encryptMetadata: em ? em.toString() !== 'false' : true, id0
+  };
+}
+
+// ── 読み込んだ文書を、その場で平文に戻す ──
+async function decryptDocInPlace(doc) {
+  const { PDFName, PDFRawStream } = PDFLib;
+  const ctx = doc.context;
+  const info = readEncryptInfo(ctx);
+  if (!info) return { encrypted: false };
+  if (info.unsupported) throw new Error('対応していない暗号化方式です（' + info.unsupported + '）');
+  if (!(await PDFCrypt.isEmptyUserPassword(info))) {
+    throw new Error('パスワードで保護されているため開けません');
+  }
+  const dec = await PDFCrypt.makeDecryptor(info);
+  let count = 0;
+  for (const [ref, obj] of ctx.enumerateIndirectObjects()) {
+    if (!(obj instanceof PDFRawStream)) continue;
+    const t = obj.dict.get(PDFName.of('Type'));
+    const tn = t ? t.toString() : '';
+    if (tn === '/XRef') continue;                              // 相互参照ストリームは常に平文
+    if (tn === '/Metadata' && !info.encryptMetadata) continue; // 暗号化対象外のメタデータ
+    const plain = await dec.decrypt(obj.contents, ref.objectNumber, ref.generationNumber);
+    obj.contents = plain;
+    obj.dict.set(PDFName.of('Length'), ctx.obj(plain.length));
+    count++;
+  }
+  delete ctx.trailerInfo.Encrypt;
+  return { encrypted: true, cfm: dec.cfm, keyBits: dec.keyBits, streams: count };
+}
+
+// ── すべての PDFDocument.load をこの関数経由にする ──
+async function loadPdfDocument(bytes) {
+  const { PDFDocument } = PDFLib;
+  try {
+    return await PDFDocument.load(bytes);
+  } catch (e) {
+    if (!/encrypt/i.test(e.message || '')) throw e;
+    const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+    await decryptDocInPlace(doc);
+    return doc;
+  }
+}
+
+// ── 末尾・先頭を走査して暗号化PDFらしさを判定（高速な事前チェック） ──
+function looksEncrypted(bytes) {
+  const dec = new TextDecoder('latin1');
+  const head = dec.decode(bytes.subarray(0, Math.min(bytes.length, 4096)));
+  const tail = dec.decode(bytes.subarray(Math.max(0, bytes.length - 65536)));
+  return /\/Encrypt\s/.test(tail) || /\/Encrypt\s/.test(head);
+}
+
+// ── 追加時に暗号化を解いて平文バイト列に置き換える ──
+async function normalizePdfBytes(bytes) {
+  if (!looksEncrypted(bytes)) return { bytes, decrypted: false };
+  const { PDFDocument } = PDFLib;
+  const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const info = await decryptDocInPlace(doc);
+  if (!info.encrypted) return { bytes, decrypted: false };
+  const out = await doc.save();
+  return { bytes: new Uint8Array(out), decrypted: true, cfm: info.cfm, keyBits: info.keyBits };
+}
+
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -833,6 +1126,7 @@ document.getElementById('fileInput').addEventListener('change', async e => {
 });
 
 async function addFiles(fileList) {
+  let decryptedCount = 0;
   // 枚数チェック
   if (files.length >= MAX_FILE_COUNT) {
     toast(`ファイル数が上限（${MAX_FILE_COUNT}件）に達しています`, 'error');
@@ -853,20 +1147,46 @@ async function addFiles(fileList) {
     }
     
     try {
-      const bytes = new Uint8Array(await f.arrayBuffer());
+      let bytes = new Uint8Array(await f.arrayBuffer());
+
+      // 暗号化（セキュリティ設定）がかかっていれば、この時点で解除しておく。
+      // pdf-lib は復号できないため、放置すると結合時に必ず失敗する。
+      let decrypted = false, encMethod = '';
+      try {
+        const norm = await normalizePdfBytes(bytes);
+        if (norm.decrypted) {
+          bytes = norm.bytes;
+          decrypted = true;
+          encMethod = `${norm.cfm} ${norm.keyBits}bit`;
+          decryptedCount++;
+        }
+      } catch (ce) {
+        toast(`${f.name}: ${ce.message}`, 'error');
+        continue;
+      }
+
       const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
       files.push({
-        id: nextId++, name: f.name, size: f.size, bytes, doc,
+        id: nextId++, name: f.name, size: bytes.length, bytes, doc,
         pageCount: doc.numPages,
         pageOrder: Array.from({ length: doc.numPages }, (_, i) => i),
         selPages: new Set(), expanded: false, checked: false,
-        annotated: false, viewPos: 0, thumbCache: new Map()
+        annotated: false, viewPos: 0, thumbCache: new Map(),
+        decrypted, encMethod
       });
-      totalSizeUsed += f.size;
-    } catch { toast(`${f.name} の読み込みに失敗しました`, 'error'); }
+      totalSizeUsed += bytes.length;
+    } catch (e) {
+      const m = String(e && e.name === 'PasswordException'
+        ? 'パスワードが必要なPDFのため開けません'
+        : '読み込みに失敗しました');
+      toast(`${f.name}: ${m}`, 'error');
+    }
   }
   renderList();
   updateCapacityInfo();
+  if (decryptedCount) {
+    toast(`${decryptedCount}件のPDFにセキュリティ設定がかかっていたため、自動で解除しました（結合できるようになります）`, 'success');
+  }
 }
 
 function entryById(id) { return files.find(f => f.id === id); }
@@ -916,7 +1236,7 @@ function renderList() {
       <div class="file-check" onclick="event.stopPropagation();toggleCheck(${f.id})" title="複数選択（まとめて並び替え・削除）">✓</div>
       <div class="file-icon-wrap">📄</div>
       <div class="file-info" onclick="toggleExpand(${f.id})" title="クリックでプレビューを展開">
-        <div class="file-name">${escapeHtml(f.name)}${f.annotated ? '<span class="badge-annotated">書込済</span>' : ''}</div>
+        <div class="file-name">${escapeHtml(f.name)}${f.annotated ? '<span class="badge-annotated">書込済</span>' : ''}${f.decrypted ? `<span class="badge-decrypted" title="このPDFにはセキュリティ設定（${escapeHtml(f.encMethod || '')}）がかかっていたため、結合できるよう自動で解除しました">🔓 制限解除</span>` : ''}</div>
         <div class="file-meta">${formatBytes(f.size)} · ${pageInfo}</div>
       </div>
       <div class="file-actions">
@@ -1209,7 +1529,7 @@ async function extractSelected(id, mode) {
     const { PDFDocument } = PDFLib;
     // 表示順（pageOrder）に沿って選択ページを抽出
     const indices = f.pageOrder.filter(idx => f.selPages.has(idx));
-    const src = await PDFDocument.load(f.bytes.slice());
+    const src = await loadPdfDocument(f.bytes.slice());
     const out = await PDFDocument.create();
     const copied = await out.copyPages(src, indices);
     copied.forEach(p => out.addPage(p));
@@ -1245,7 +1565,7 @@ async function splitAllZip(id) {
   const f = entryById(id);
   try {
     const { PDFDocument } = PDFLib;
-    const src = await PDFDocument.load(f.bytes.slice());
+    const src = await loadPdfDocument(f.bytes.slice());
     const total = src.getPageCount();
     const zip = new JSZip();
     const baseName = f.name.replace(/\.pdf$/i, '');
@@ -1293,9 +1613,15 @@ async function mergePDFs() {
     const { PDFDocument } = PDFLib;
     const merged = await PDFDocument.create();
     for (const item of targets) {
-      const doc = await PDFDocument.load(item.bytes.slice());
+      let doc;
+      try {
+        doc = await loadPdfDocument(item.bytes.slice());
+      } catch (fe) {
+        throw new Error(`「${item.name}」を読み込めません（${fe.message}）`);
+      }
       const pages = await merged.copyPages(doc, item.pageOrder);
       pages.forEach(p => merged.addPage(p));
+      btn.innerHTML = `<span class="dots"><span></span><span></span><span></span></span> 結合中 ${merged.getPageCount()}ページ`;
     }
     const raw = (document.getElementById('mergeName').value || '').trim();
     const topBase = targets[0].name.replace(/\.pdf$/i, '');
@@ -2536,7 +2862,7 @@ function disp2page(du, dv, rot) {
 
 async function buildAnnotatedBytes(onProgress) {
   const { PDFDocument, rgb, degrees, StandardFonts } = PDFLib;
-  const pdfDoc = await PDFDocument.load(drawEntry.bytes.slice());
+  const pdfDoc = await loadPdfDocument(drawEntry.bytes.slice());
   const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const imgEmbedCache = new Map();
   const labelCache = new Map();
