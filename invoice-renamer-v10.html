@@ -196,6 +196,30 @@
   .btn-sheet-copy:hover { opacity: .88; transform: translateY(-1px); }
   .btn-sheet-copy:disabled { opacity: .4; cursor: not-allowed; transform: none; }
   .sheet-copy-hint { margin-top: 10px; font-size: 11px; color: var(--text-muted); text-align: center; }
+
+  /* 保管箱送信 */
+  .btn-inbox-send { background: linear-gradient(135deg, #2baa72, #1f8f5f); border: none; border-radius: 8px; color: #fff; font-size: 12px; padding: 8px 18px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-weight: 600; transition: all .2s; box-shadow: 0 4px 12px rgba(43,170,114,.3); }
+  .btn-inbox-send:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+  .btn-inbox-send:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  .inbox-settings { margin-top: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); font-size: 12px; }
+  .inbox-settings > summary { cursor: pointer; padding: 8px 12px; font-weight: 600; color: var(--text-muted); user-select: none; list-style: revert; }
+  .inbox-settings > summary:hover { color: var(--accent); }
+  .inbox-conf-badge { font-family: 'DM Mono', monospace; font-size: 10px; margin-left: 8px; padding: 2px 8px; border-radius: 10px; }
+  .inbox-conf-badge.ok { background: rgba(43,170,114,.12); color: var(--success); }
+  .inbox-conf-badge.ng { background: rgba(232,151,42,.12); color: var(--warning); }
+  .inbox-settings-body { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .inbox-field { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .inbox-field label { font-size: 11px; color: var(--text-muted); min-width: 140px; }
+  .inbox-input { flex: 1; min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text); outline: none; }
+  .inbox-input:focus { border-color: var(--accent); }
+  .inbox-settings-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .btn-inbox-save, .btn-inbox-test { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-muted); font-size: 11px; padding: 6px 14px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; transition: all .15s; }
+  .btn-inbox-save:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-inbox-test:hover { border-color: var(--success); color: var(--success); }
+  .inbox-test-msg { font-size: 11px; font-family: 'DM Mono', monospace; }
+  .inbox-hint { font-size: 10px; color: var(--text-muted); line-height: 1.5; }
+  .inbox-send-log { margin-top: 10px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); max-height: 160px; overflow-y: auto; line-height: 1.7; text-align: left; }
+  .inbox-send-log .ok { color: var(--success); } .inbox-send-log .warn { color: var(--warning); } .inbox-send-log .err { color: var(--error); }
   .sheet-copy-hint b { color: var(--accent); }
   .sheet-copied-msg { margin-top: 8px; font-size: 12px; color: var(--success); text-align: center; font-weight: 500; min-height: 18px; transition: opacity .3s; }
   .btn-preview-toggle { margin-top: 10px; background: none; border: none; color: var(--accent); font-size: 11px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; padding: 4px; }
@@ -439,11 +463,34 @@
     <div class="dl-btn-row">
       <button class="btn-dl-all" id="btnDlAll">⬇ 全件一括ダウンロード（PDF）</button>
       <button class="btn-sheet-copy" id="btnSheetCopy">📋 スプレッドシートにコピー</button>
+      <button class="btn-inbox-send" id="btnInboxSend">📤 保管箱へ送信（払込票マトリックス）</button>
     </div>
     <div class="sheet-copy-hint" id="sheetCopyHint">
       コピー後、スプレッドシートの<b>先頭タブA2セル</b>を選んで <b>Ctrl+V</b>（Mac: ⌘+V）で一括貼り付け
     </div>
     <div class="sheet-copied-msg" id="sheetCopiedMsg"></div>
+
+    <!-- 保管箱連携の設定（送信先URL・連携キー） -->
+    <details class="inbox-settings" id="inboxSettings">
+      <summary>📤 保管箱連携の設定（送信先URL・連携キー）<span class="inbox-conf-badge" id="inboxConfBadge"></span></summary>
+      <div class="inbox-settings-body">
+        <div class="inbox-field">
+          <label for="inboxEndpoint">エンドポイントURL</label>
+          <input type="text" id="inboxEndpoint" class="inbox-input" placeholder="https://xxxx.supabase.co/functions/v1/inbox-intake" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="inbox-field">
+          <label for="inboxSecret">連携キー（シークレット）</label>
+          <input type="password" id="inboxSecret" class="inbox-input" placeholder="マトリックス側の INBOX_INTAKE_SECRET と同じ文字列" autocomplete="off">
+        </div>
+        <div class="inbox-settings-actions">
+          <button class="btn-inbox-save" id="btnInboxSave">設定を保存</button>
+          <button class="btn-inbox-test" id="btnInboxTest">接続テスト（ping）</button>
+          <span class="inbox-test-msg" id="inboxTestMsg"></span>
+        </div>
+        <div class="inbox-hint">払込票マトリックスの保管箱（受信トレイ）の受け口に送ります。URLと連携キーはマトリックス側の担当者に確認してください。入力内容はこの端末にのみ保存されます。</div>
+      </div>
+    </details>
+    <div class="inbox-send-log" id="inboxSendLog"></div>
   </div>
 
 
@@ -1745,6 +1792,123 @@ async function downloadAll() {
   btn.disabled = false; btn.textContent = '⬇ 全件一括ダウンロード（PDF）';
 }
 
+// ── 保管箱連携（払込票マトリックスの受信トレイへ送信）────────
+// リネーム＆ダウンローダーの postToInbox と同じ契約:
+//   POST { secret, filename, content_base64 } → { ok, deduped, id }
+const INBOX_EP_KEY = 'util_inbox_endpoint';
+const INBOX_SECRET_KEY = 'util_inbox_secret';
+
+function getInboxConfig(){
+  return {
+    endpoint: (localStorage.getItem(INBOX_EP_KEY) || '').trim(),
+    secret:   (localStorage.getItem(INBOX_SECRET_KEY) || '').trim(),
+  };
+}
+function loadInboxSettings(){
+  const ep = document.getElementById('inboxEndpoint');
+  const sc = document.getElementById('inboxSecret');
+  if(ep) ep.value = localStorage.getItem(INBOX_EP_KEY) || '';
+  if(sc) sc.value = localStorage.getItem(INBOX_SECRET_KEY) || '';
+  updateInboxConfBadge();
+}
+function saveInboxSettings(){
+  const ep = document.getElementById('inboxEndpoint').value.trim();
+  const sc = document.getElementById('inboxSecret').value.trim();
+  try { localStorage.setItem(INBOX_EP_KEY, ep); localStorage.setItem(INBOX_SECRET_KEY, sc); } catch(_){}
+  updateInboxConfBadge();
+  const msg = document.getElementById('inboxTestMsg');
+  if(msg){ msg.className = 'inbox-test-msg ok'; msg.textContent = '保存しました'; setTimeout(()=>{ msg.textContent=''; }, 2500); }
+}
+function updateInboxConfBadge(){
+  const cfg = getInboxConfig();
+  const ok = cfg.endpoint && cfg.secret;
+  const b = document.getElementById('inboxConfBadge');
+  if(b){ b.className = 'inbox-conf-badge ' + (ok ? 'ok' : 'ng'); b.textContent = ok ? '設定済み' : '未設定'; }
+  const sendBtn = document.getElementById('btnInboxSend');
+  if(sendBtn) sendBtn.title = ok ? '' : '先に「保管箱連携の設定」でURLと連携キーを入力してください';
+}
+
+// PDFファイル → base64（データ部分のみ）
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => { const s = String(r.result||''); resolve(s.includes(',') ? s.slice(s.indexOf(',')+1) : s); };
+    r.onerror = () => reject(new Error('ファイル読み込み失敗'));
+    r.readAsDataURL(file);
+  });
+}
+
+// 1件のPDFを受信トレイへ送る
+async function postToInbox(cfg, filename, base64){
+  try {
+    const res = await fetch(cfg.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: cfg.secret, filename, content_base64: base64 }),
+    });
+    let data = {};
+    try { data = await res.json(); } catch(_){}
+    if(!res.ok) return { ok:false, error: data.error || `HTTP ${res.status}` };
+    return { ok:true, deduped: !!data.deduped, id: data.id };
+  } catch(e){ return { ok:false, error: e.message }; }
+}
+
+// 接続テスト（ping）。マトリックス側が action:'ping' に対応していれば ok を返す
+async function testInbox(){
+  const cfg = getInboxConfig();
+  const msg = document.getElementById('inboxTestMsg');
+  if(!cfg.endpoint || !cfg.secret){ msg.className='inbox-test-msg err'; msg.textContent='URLと連携キーを入力してください'; return; }
+  msg.className='inbox-test-msg warn'; msg.textContent='接続中…';
+  try {
+    const res = await fetch(cfg.endpoint, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ secret: cfg.secret, action:'ping' }),
+    });
+    let data={}; try{ data=await res.json(); }catch(_){}
+    if(res.ok && (data.ok || data.pong)){ msg.className='inbox-test-msg ok'; msg.textContent='✅ 接続OK'; }
+    else if(res.status===401){ msg.className='inbox-test-msg err'; msg.textContent='✗ 連携キーが違います（401）'; }
+    else { msg.className='inbox-test-msg err'; msg.textContent=`✗ 応答: ${data.error || ('HTTP '+res.status)}`; }
+  } catch(e){ msg.className='inbox-test-msg err'; msg.textContent='✗ つながりません: '+e.message; }
+}
+
+// 選択（解析済み）全件を保管箱へ送信
+async function sendAllToInbox(){
+  const cfg = getInboxConfig();
+  const log = document.getElementById('inboxSendLog');
+  if(!cfg.endpoint || !cfg.secret){
+    document.getElementById('inboxSettings').open = true;
+    log.innerHTML = '<span class="err">保管箱連携の設定が未入力です。URLと連携キーを入力・保存してください。</span>';
+    return;
+  }
+  const done = [...files.keys()].filter(id => files.get(id).status === 'done');
+  if(!done.length){ log.innerHTML = '<span class="warn">送信できる解析済みPDFがありません</span>'; return; }
+  if(!confirm(`解析済み ${done.length} 件のPDFを保管箱（払込票マトリックス）に送ります。よろしいですか？`)) return;
+
+  const btn = document.getElementById('btnInboxSend');
+  btn.disabled = true; const label = btn.textContent;
+  let sent=0, deduped=0, failed=0;
+  log.innerHTML = `<span class="warn">=== 保管箱送信開始: ${done.length} 件 ===</span>`;
+  const append = (html) => { log.innerHTML += '<br>' + html; log.scrollTop = log.scrollHeight; };
+
+  for(const id of done){
+    const entry = files.get(id);
+    const filename = mkName(getFields(id));
+    btn.textContent = `⏳ 送信中… ${sent+deduped+failed+1}/${done.length}`;
+    try {
+      const base64 = await fileToBase64(entry.file);
+      const res = await postToInbox(cfg, filename, base64);
+      if(res.ok && res.deduped){ deduped++; if(entry.data) entry.data.inboxSent = true; append(`<span class="warn">↺ 既に保管箱にあり/スキップ: ${esc(filename)}</span>`); }
+      else if(res.ok){ sent++; if(entry.data) entry.data.inboxSent = true; append(`<span class="ok">⬆ 送信: ${esc(filename)}</span>`); }
+      else { failed++; append(`<span class="err">✗ 送信失敗: ${esc(filename)} — ${esc(res.error||'')}</span>`); }
+    } catch(e){ failed++; append(`<span class="err">✗ 例外: ${esc(filename)} — ${esc(e.message||String(e))}</span>`); }
+    await new Promise(r => setTimeout(r, 120));
+  }
+  append(`<span class="ok">=== 完了: 新規 ${sent} / 既存スキップ ${deduped} / 失敗 ${failed} ===</span>`);
+  btn.disabled = false; btn.textContent = label;
+  if(typeof renderPreview === 'function') renderPreview();
+  renderTable();
+}
+
 // ── スプレッドシート転記 ─────────────────────────────────
 // 勘定項目名 → リドックス勘定項目番号（支出）。ExcelのD列（支出：勘定項目）に準拠
 //   18:電気料金 19:水道料金 20:ガス料金 21:通信料金
@@ -2382,6 +2546,11 @@ function renderDL() {
 }
 document.getElementById('btnDlAll').addEventListener('click', downloadAll);
 document.getElementById('btnSheetCopy').addEventListener('click', copyToSheet);
+// 保管箱連携
+document.getElementById('btnInboxSend').addEventListener('click', sendAllToInbox);
+document.getElementById('btnInboxSave').addEventListener('click', saveInboxSettings);
+document.getElementById('btnInboxTest').addEventListener('click', testInbox);
+loadInboxSettings();
 
 // ── 入出金日（一律）：当月20日・土日祝は直前平日 ────────────
 // 日本の祝日判定（主要な祝日をカバー。振替休日も考慮）
